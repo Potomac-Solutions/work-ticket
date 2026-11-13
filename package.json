@@ -12,10 +12,10 @@
   "dependencies": {
     "@journey-to-code/symbology": "0.2.0",
     "@potomac-solutions/kit": "github:Potomac-Solutions/kit#e4578cd80f7f27837896fbc560e59a56ba43907f",
-    "@zubra/compiler": "5.13.0",
-    "@zubra/runtime": "5.13.0",
-    "@zubra/server": "5.13.0",
-    "@zubra/sync": "5.13.0"
+    "@zubra/compiler": "^5.13.1",
+    "@zubra/runtime": "^5.13.1",
+    "@zubra/server": "^5.13.1",
+    "@zubra/sync": "^5.13.1"
   },
   "devDependencies": {
     "playwright": "1.63.0"
