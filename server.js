@@ -12,6 +12,7 @@ import { createZubra } from '@zubra/server';
 import { signedCookie } from '@potomac-solutions/kit/auth';
 import { createStaff } from '@potomac-solutions/kit/staff';
 import { staffPages } from '@potomac-solutions/kit/staff/pages';
+import { createNotices } from '@potomac-solutions/kit/notice';
 import { loadQr } from '@journey-to-code/symbology';
 import { createJobs } from './src/jobs.js';
 import { layout, escape } from './src/layout.js';
@@ -37,13 +38,16 @@ export async function createApp({ db = join(process.env.DATA_DIR ?? here, 'work-
   // shop's own log; their pages and routes are the kit's too.
   const production = process.env.NODE_ENV === 'production';
   const staff = createStaff({ store: book.store, secure: production, ...(staffCost ? { cost: staffCost } : {}) });
-  const pages = staffPages({ staff, home: '/shop', business: shop.name, secure: production, render: (res, title, body) => page(res, zubra.page(), title, body) });
+  // A message in an address shows only if the server signed it (kit/notice), so a link can't put
+  // its own words in a page's alert.
+  const notices = createNotices({ secret });
+  const pages = staffPages({ staff, notices, proxies: Number(process.env.TRUST_PROXIES ?? 0), home: '/shop', business: shop.name, secure: production, render: (res, title, body) => page(res, zubra.page(), title, body) });
   const send = (res, status, html) => (res.writeHead(status, { 'content-type': 'text/html; charset=utf-8' }), res.end(html));
-  const back = (res, location) => (res.writeHead(303, { location }), res.end());
+  const back = (res, location) => (res.writeHead(303, { location: notices.sign(location) }), res.end());
   const page = (res, p, title, body) => send(res, 200, p.finish(layout({ title, shop, body })));
   const note = (url) => {
-    const problem = (url.searchParams.get('problem') ?? '').slice(0, 200);
-    const done = (url.searchParams.get('done') ?? '').slice(0, 200);
+    const problem = notices.read(url).problem;
+    const done = notices.read(url).done;
     return `${problem ? `<p class="notice" role="alert">${escape(problem)}</p>` : ''}${done ? `<p class="ok" role="status">${escape(done)}</p>` : ''}`;
   };
   const withProblem = (path, answer) => `${path}?problem=${encodeURIComponent(answer.error)}`;
@@ -83,7 +87,7 @@ ${p.render('job-progress', { job: job.key, steps: job.kind.stages, names: Object
   function payPage(p, url, job) {
     const cart = { lines: [{ item: job.key, qty: 1, name: `Balance, ${job.kind.name.toLowerCase()} (tag ${job.tag})`, total: job.balance }], cents: job.balance, ready: job.balance > 0 };
     return `<section><a href="/t/${job.key}">Back to your job</a><h1>Pay the balance</h1><p class="lede">Tag ${job.tag}. Pay now and pickup is quicker.</p></section>
-${p.render('checkout-form', { cart, place: `/t/${job.key}/pay`, checkout: job.key, problem: (url.searchParams.get('problem') ?? '').slice(0, 200), testMode: true, name: job.name, email: job.email ?? '', phone: job.phone ?? '' })}`;
+${p.render('checkout-form', { cart, place: `/t/${job.key}/pay`, checkout: job.key, problem: notices.read(url).problem, testMode: true, name: job.name, email: job.email ?? '', phone: job.phone ?? '' })}`;
   }
 
   function board(url) {

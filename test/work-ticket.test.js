@@ -9,6 +9,13 @@ import { chromium } from 'playwright';
 import { loadQr } from '@journey-to-code/symbology';
 import { createApp } from '../server.js';
 
+// A redirect's location as words: the signature on its message (kit/notice) checked and taken off.
+const plain = (location) => {
+  location = String(location ?? '');
+  if (/[?&](problem|done)=/.test(location) && !location.startsWith('?')) assert.match(location, /&sig=[\w-]{22}/, `unsigned message: ${location}`);
+  return decodeURIComponent(location.replace(/&sig=[\w-]+/, '').replaceAll('+', ' '));
+};
+
 // The owner every test shop starts with, set up from the shop's setup link; cheap hashing for tests.
 const OWNER = { email: 'owner@example.com', name: 'Test Owner', password: 'test owner password' };
 const COST = { N: 2 ** 10, r: 8, p: 1 };
@@ -47,7 +54,7 @@ async function device(name, { javaScriptEnabled = true, shift = false } = {}) {
   await page.goto(app.base);
   const post = async (path, form, headers = {}) => {
     const response = await context.request.post(`${app.base}${path}`, { form, headers, maxRedirects: 0 });
-    return { status: response.status(), location: decodeURIComponent(response.headers().location ?? '') };
+    return { status: response.status(), location: plain(response.headers().location ?? '') };
   };
   const get = async (path) => (await context.request.get(`${app.base}${path}`)).text();
   if (shift) await post('/staff/sign-in', { email: OWNER.email, password: OWNER.password });
