@@ -9,13 +9,22 @@ import { chromium } from 'playwright';
 import { loadQr } from '@journey-to-code/symbology';
 import { createApp } from '../server.js';
 
+// The owner every test shop starts with, set up from the shop's setup link; cheap hashing for tests.
+const OWNER = { email: 'owner@example.com', name: 'Test Owner', password: 'test owner password' };
+const COST = { N: 2 ** 10, r: 8, p: 1 };
+async function withOwner(server) {
+  const made = await server.staff.accept(await server.staff.setup(), OWNER);
+  if (!made.ok) throw new Error(made.error);
+  return server;
+}
+
 const dir = mkdtempSync(join(tmpdir(), 'work-ticket-'));
 const errors = [];
 let browser;
 let app;
 
 before(async () => {
-  const server = await createApp({ db: join(dir, 'app.db'), cache: false, secret: 'test' });
+  const server = await withOwner(await createApp({ staffCost: COST, db: join(dir, 'app.db'), cache: false, secret: 'test' }));
   await new Promise((done) => server.listen(0, done));
   app = { server, base: `http://localhost:${server.address().port}` };
   const system = ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser', 'C:/Program Files/Google/Chrome/Application/chrome.exe', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find((path) => existsSync(path));
@@ -41,7 +50,7 @@ async function device(name, { javaScriptEnabled = true, shift = false } = {}) {
     return { status: response.status(), location: decodeURIComponent(response.headers().location ?? '') };
   };
   const get = async (path) => (await context.request.get(`${app.base}${path}`)).text();
-  if (shift) await post('/staff/start', {});
+  if (shift) await post('/staff/sign-in', { email: OWNER.email, password: OWNER.password });
   return { context, page, post, get };
 }
 
@@ -194,11 +203,11 @@ test('only a shop shift takes jobs in or moves them; a page reads only the jobs 
   const { key: mine } = await takeIn(shop, 'processing', { name: 'Owner One' });
   const { key: theirs } = await takeIn(shop, 'processing', { name: 'Owner Two' });
   const outsider = await device('outsider', { javaScriptEnabled: false });
-  assert.match(await outsider.get('/shop'), /Start a shift/);
+  assert.match(await outsider.get('/shop'), /<button type=\"submit\">Sign in<\/button>/);
   assert.equal((await outsider.post('/shop/new/processing', { name: 'X Y', phone: '3015550100', cuts: 'All ground' })).location, '/shop');
   assert.equal((await outsider.post('/shop/advance', { key: mine })).location, '/shop');
   assert.equal(app.server.book.job(mine).status, 'received');
-  assert.equal((await outsider.post('/staff/start', {}, { 'sec-fetch-site': 'cross-site' })).status, 403);
+  assert.equal((await outsider.post('/staff/sign-in', {}, { 'sec-fetch-site': 'cross-site' })).status, 403);
 
   await outsider.page.goto(`${app.base}/t/${mine}`);
   const pull = async (scope = '') => {

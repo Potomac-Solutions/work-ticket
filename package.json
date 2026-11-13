@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@journey-to-code/symbology": "0.2.0",
-    "@potomac-solutions/kit": "github:Potomac-Solutions/kit#0ad64011ab11f8b5335722ee15ea3b1c40876bd8",
+    "@potomac-solutions/kit": "github:Potomac-Solutions/kit#e4578cd80f7f27837896fbc560e59a56ba43907f",
     "@zubra/compiler": "5.13.0",
     "@zubra/runtime": "5.13.0",
     "@zubra/server": "5.13.0",

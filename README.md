@@ -8,7 +8,9 @@ The shop it starts with, Backbone Mountain Taxidermy & Processing in Oakland, Ma
 
 `npm install`, then `npm start`, and open http://localhost:3000. Two browser windows side by side (one private, so it's another person) show the live parts best.
 
-1. **Take a job in.** Open **The shop (staff)** from the footer and start a shift. Choose **Deer processing**, fill in a customer (any phone with an area code), pick the cuts and an extra or two, and **Take it in**. You get the job's tag: its number, what was asked for, and a code.
+**Staff sign in with their own accounts.** The first time, nobody has one, so the server prints a setup link: open it to make the owner (your email, name and a password). The owner's **People** page invites the rest of the staff (an invite is a link to send them), resets passwords and turns people off.
+
+1. **Take a job in.** Open **The shop (staff)** from the footer and sign in. Choose **Deer processing**, fill in a customer (any phone with an area code), pick the cuts and an extra or two, and **Take it in**. You get the job's tag: its number, what was asked for, and a code.
 2. **Follow it.** In the other window, open the customer's page from the tag. Back at the shop, move the job along (Cutting, Wrapping, Ready). The customer's page follows each step without a reload.
 3. **Ready.** When it's ready, the shop page shows the text that went out (with the balance and the link).
 4. **Pay.** On the customer's page, **Pay it now** with any card number (`4000 0000 0000 0002` is declined). Then the shop marks it **Picked up**. Or take the balance at the counter: tick the box on the job and press **Picked up**.
@@ -19,7 +21,7 @@ The shop it starts with, Backbone Mountain Taxidermy & Processing in Oakland, Ma
 
 | Piece | Job |
 | --- | --- |
-| [Potomac kit](https://github.com/Potomac-Solutions/kit) (private) | `stages` (each kind of job's stages, one step at a time, once), `notify` (the ready text and email; a test outbox here), `pay` (the balance, charged at most once; its test provider), `auth` (the customer and shop cookies), `store` (the Sync log). The kit's `checkout-form`, from its package |
+| [Potomac kit](https://github.com/Potomac-Solutions/kit) (private) | `stages` (each kind of job's stages, one step at a time, once), `notify` (the ready text and email; a test outbox here), `pay` (the balance, charged at most once; its test provider), `staff` and `staff/pages` (the owner and staff: passwords, sessions, invites, roles, and their pages), `auth` (the customer and shop cookies), `store` (the Sync log). The kit's `checkout-form`, from its package |
 | `@zubra/server` | Renders every page before any JavaScript runs |
 | `@zubra/sync` | The log (one SQLite file). Each job is a document only the server writes; a customer's page follows it live, and a browser reads only the jobs it has opened |
 | [symbology](https://github.com/journey-to-code-org/symbology) | Draws the code on the tag (the customer's link) |
@@ -44,7 +46,7 @@ Node 22.13 or later. `SESSION_SECRET` is required in production; `DATA_DIR` says
 4. Two tablets pressing the same button at once move a job one stage, not two.
 5. The customer pays the balance online once (a declined card says so); someone who never opened the job can't pay it.
 6. Tag number and the last four of the phone find a lost job; a wrong pair finds nothing.
-7. Only a shop shift takes jobs in or moves them; a browser reads only the jobs it has opened, even when it asks for more, and writes nothing.
+7. Only signed-in staff take jobs in or moves them; a browser reads only the jobs it has opened, even when it asks for more, and writes nothing.
 
 Every behaviour was broken on purpose once to check a test fails (19 of 19 caught). Writing test 4 found a real bug: a second press of a stage's button moved the job on a further stage. Each button now says which stage it moves to.
 
@@ -52,4 +54,4 @@ Every behaviour was broken on purpose once to check a test fails (19 of 19 caugh
 
 - The owner's admin: kinds of job, stages, questions and prices, now in `src/shop.js`.
 - Real texts and email (a provider behind the kit's `notify`), and a real payment provider.
-- Photos at intake and at ready (the kit's `files`), and staff accounts.
+- Photos at intake and at ready (the kit's `files`).
