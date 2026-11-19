@@ -1,5 +1,5 @@
-// The shop Work Ticket starts with. Everything here is data the owner will edit from an admin page
-// (a later step); nothing else in the app knows what a deer is.
+// The shop Work Ticket starts with. The owner edits prices, deposits and words from the admin;
+// nothing else in the app knows what a deer is. `turnaroundDays` says when a job is late.
 //
 // A made-up shop in a real county, so the demo reads like the trade without being anyone's.
 
@@ -28,6 +28,7 @@ export const kinds = [
     cents: 11000,
     deposit: 0,
     turnaround: 'About a week',
+    turnaroundDays: 7,
     questions: [
       { id: 'cuts', label: 'How to cut it', choices: ['Steaks and roasts', 'Half steaks and roasts, half ground', 'All ground'] },
       { id: 'extras', label: 'Extras', many: true, choices: [['Summer sausage', 4000], ['Jerky', 3500], ['Snack sticks', 3000]] },
@@ -41,6 +42,7 @@ export const kinds = [
     cents: 65000,
     deposit: 30000,
     turnaround: 'About six months',
+    turnaroundDays: 180,
     questions: [{ id: 'pose', label: 'Pose', choices: ['Upright', 'Semi-sneak', 'Full sneak'] }],
   },
   {
@@ -51,6 +53,7 @@ export const kinds = [
     cents: 15000,
     deposit: 5000,
     turnaround: 'About six weeks',
+    turnaroundDays: 42,
     questions: [{ id: 'finish', label: 'Finish', choices: ['Natural', 'Whitened'] }],
   },
 ];

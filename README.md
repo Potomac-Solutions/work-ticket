@@ -6,16 +6,29 @@ The shop it starts with, Backbone Mountain Taxidermy & Processing in Oakland, Ma
 
 ## Try it
 
-`npm install`, then `npm start`, and open http://localhost:3000. Two browser windows side by side (one private, so it's another person) show the live parts best.
+`npm install`, then `npm run demo`: it fills the shop with a year of made-up jobs through the seasons (busy from October), forty customers, and today's shop, and starts it on http://localhost:3000. It prints three demo sign-ins, for this machine only:
 
-**Staff sign in with their own accounts.** The first time, nobody has one, so the server prints a setup link: open it to make the owner (your email, name and a password). The owner's **People** page invites the rest of the staff (an invite is a link to send them), resets passwords and turns people off.
+| Who | Email | Password | Where |
+| --- | --- | --- | --- |
+| Owner | `owner@example.com` | `backbone-owner-demo` | `/admin`: everything |
+| Staff | `shop@example.com` | `backbone-staff-demo` | `/admin` (overview, jobs, customers), `/shop` |
+| Customer | `riley@example.com` | `backbone-guest-demo` | `/account` |
 
-1. **Take a job in.** Open **The shop (staff)** from the footer and sign in. Choose **Deer processing**, fill in a customer (any phone with an area code), pick the cuts and an extra or two, and **Take it in**. You get the job's tag: its number, what was asked for, and a code.
-2. **Follow it.** In the other window, open the customer's page from the tag. Back at the shop, move the job along (Cutting, Wrapping, Ready). The customer's page follows each step without a reload.
-3. **Ready.** When it's ready, the shop page shows the text that went out (with the balance and the link).
-4. **Pay.** On the customer's page, **Pay it now** with any card number (`4000 0000 0000 0002` is declined). Then the shop marks it **Picked up**. Or take the balance at the counter: tick the box on the job and press **Picked up**.
-5. **Lost the link?** On the home page, the tag number and the last four digits of the phone find the job.
-6. **Without JavaScript** (turn it off in the browser's settings), all of it works the same.
+`npm start` alone keeps what's there; with no data it prints a setup link for the first owner instead. `npm run seed` fills an empty shop, and `npm run seed -- --fresh` starts over.
+
+**The public side**
+1. **The landing page** (`/`): the shop, finding a job by tag and phone, what it does and for how much, how it works, and where and when.
+2. **Follow a job.** Open one from its tag (or tag number and phone): its stages move without a reload, and **Pay it now** takes the balance with any card number (`4000 0000 0000 0002` is declined).
+3. **An account** (`/account`): a job taken in under your email joins it, and so does any job you open while signed in. Signed in on any device, every job is there, and you can pay from there. **Forgot your password?** sends a one-time link (to the Outbox, and the server's log).
+
+**The admin** (`/admin`, staff sign-in)
+4. **Overview**: what was taken in over the last 30 days against the 30 before, jobs being worked on, ready and waiting (with what's still to collect), late jobs (past their kind's usual turnaround), new accounts, a chart by day, and what the staff did.
+5. **Jobs**: search by tag, name, phone or email; filter by where they are (being worked on, ready, late, picked up) and kind; CSV. A job's page shows its answers, money and every stage's date, and moves it along (ready texts the customer; pickup needs the balance).
+6. **Customers**: every account with its jobs; an owner can turn one off or email a reset link.
+7. **Reports** (owners): taken in and jobs by day, week or month in the shop's time zone, by kind, extras chosen, days from drop-off to ready against the usual, deposits, what's still to collect, and CSV.
+8. **Settings** (owners): each kind's price, deposit, description and turnaround, and the shop's hours and phone. New jobs use them; jobs already in keep their price.
+9. **The board** (`/shop`): take a job in, print its tag, move jobs along, see the texts sent.
+10. **Without JavaScript** (turn it off in the browser's settings), all of it works the same.
 
 ## How it is put together
 
@@ -26,7 +39,10 @@ The shop it starts with, Backbone Mountain Taxidermy & Processing in Oakland, Ma
 | `@zubra/sync` | The log (one SQLite file). Each job is a document only the server writes; a customer's page follows it live, and a browser reads only the jobs it has opened |
 | [symbology](https://github.com/journey-to-code-org/symbology) | Draws the code on the tag (the customer's link) |
 | `src/shop.js` | The shop, its kinds of job, their stages, questions and prices, as data |
-| `src/jobs.js` | The shop's side: intake, tag numbers, who may see which job, the board, the ready text, the balance, and the words |
+| `src/jobs.js` | The shop's side: intake, tag numbers, who may see which job, the board, the ready text, the balance, what follows a customer account, the owner's settings, the staff activity, and the words |
+| `kit/customers`, `kit/reports`, `kit/charts` | Customer accounts; the numbers by day, week or month, and CSV; charts drawn on the server as SVG, with a table under each |
+| `src/account.js`, `src/admin.js` | The account pages; the admin |
+| `bin/seed.js` | The demo data |
 
 ## Run it
 
@@ -48,10 +64,21 @@ Node 22.13 or later. `SESSION_SECRET` is required in production; `DATA_DIR` says
 6. Tag number and the last four of the phone find a lost job; a wrong pair finds nothing.
 7. Only signed-in staff take jobs in or moves them; a browser reads only the jobs it has opened, even when it asks for more, and writes nothing.
 
+The admin, customer accounts and reports (`test/admin.test.js`, over plain HTTP):
+
+8. The landing page leads with the shop, then finding a job; a guest sees no admin link.
+9. A job taken in under an account's email (in any case) joins it; one taken in without it doesn't, until it's opened signed in; then another signed-in device can pay it, and a signed-out one can't.
+10. A forgotten password gets the same page whether or not the account exists; the emailed link works once.
+11. The admin needs a staff sign-in; staff get no reports, settings or outbox (403) and their settings posts change nothing; owners get them all.
+12. Staff find a job by tag and move it along from its page; ready texts the customer; pickup needs the balance; it's in the activity.
+13. A new price and deposit apply to new jobs, not ones already in; a deposit above the price is refused.
+14. The report's total matches the jobs and its CSV adds up to it; a name starting with `=` opens in a spreadsheet as text.
+15. A turned-off customer is signed out; only an owner can turn them back on.
+
 Every behaviour was broken on purpose once to check a test fails (19 of 19 caught). Writing test 4 found a real bug: a second press of a stage's button moved the job on a further stage. Each button now says which stage it moves to.
 
 ## Not yet
 
-- The owner's admin: kinds of job, stages, questions and prices, now in `src/shop.js`.
-- Real texts and email (a provider behind the kit's `notify`), and a real payment provider.
+- More of the owner's admin: adding kinds of job, their stages and questions are still in `src/shop.js` (prices, deposits and words are editable).
+- Real texts and email (a provider behind the kit's `notify`; texts and reset links go to the outbox), and a real payment provider.
 - Photos at intake and at ready (the kit's `files`).
