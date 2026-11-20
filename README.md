@@ -1,6 +1,6 @@
 # Work Ticket
 
-Drop off and track, for a shop that takes jobs in and hands them back: a taxidermist, a deer processor, a small-engine or ski-tuning shop. The counter takes a job in and prints its tag. The customer follows each stage on their phone, gets a text when it's ready, and can pay the balance online. A Potomac Solutions platform, built on the [kit](https://github.com/Potomac-Solutions/kit) and [Zubra](https://github.com/journey-to-code-org/zubra).
+Drop off and track, for a shop that takes jobs in and hands them back: a taxidermist, a deer processor, a small-engine or ski-tuning shop. The counter takes a job in and prints its tag. The customer follows each stage on their phone, gets a text when it's ready, and can pay the balance online. A Potomac Solutions platform, built on the [kit](https://github.com/Potomac-Solutions/kit) and [Zubra](https://github.com/zubra-js/zubra).
 
 The shop it starts with, Backbone Mountain Taxidermy & Processing in Oakland, Maryland, is made up. Nothing here is a real job, payments are in test mode, and texts are kept on the shop's page instead of being sent.
 
