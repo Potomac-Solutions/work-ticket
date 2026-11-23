@@ -255,6 +255,9 @@ test('the shop’s board is live: a job taken in and one moved show without a re
   const { key } = await takeIn(counter, 'processing', { name: 'Opal Livengood' });
   await floor.page.locator('.lane.placed .ticket', { hasText: 'Opal Livengood' }).waitFor({ timeout: 5000 });
   assert.equal(await fresh(), before + 1, 'the lane counts it');
+  // The count in the sidebar follows too: it says what a fresh page would.
+  const sideNow = /data-live="waiting-side">(?:<b[^>]*>(\d+)<\/b>)?/.exec(await floor.get('/shop'))?.[1] ?? '';
+  await floor.page.waitForFunction((want) => (document.querySelector('[data-live="waiting-side"]')?.textContent ?? '') === want, sideNow, { timeout: 5000 });
   await floor.page.locator('board-watch [role=status]', { hasText: 'A new job came in.' }).waitFor({ timeout: 2000 });
 
   // The counter moves it on: the floor follows.
@@ -267,6 +270,13 @@ test('the shop’s board is live: a job taken in and one moved show without a re
   await floor.page.locator('.lane.bench .ticket', { hasText: 'Opal Livengood' }).locator('button').click();
   await floor.page.waitForURL(/done=/);
   assert.notEqual(app.server.book.job(key).status, was);
+  // Picked up: the job leaves the lanes and joins the list at the foot of the board, live.
+  await floor.page.goto(`${app.base}/shop`);
+  await floor.page.waitForFunction(() => customElements.get('board-watch'));
+  await floor.page.waitForTimeout(400);
+  for (let i = 0; i < 8 && app.server.book.job(key).status !== 'picked-up'; i++) await advance(counter, key, { paidAtCounter: 'yes' });
+  assert.equal(app.server.book.job(key).status, 'picked-up');
+  await floor.page.locator('[data-live=done]', { hasText: 'Opal Livengood' }).waitFor({ timeout: 5000 });
 
   // Staff are sent the board; a customer's page never is.
   const pull = async (who) => (await who.context.request.get(`${app.base}/_zb/sync/pull?since=0`)).text();
