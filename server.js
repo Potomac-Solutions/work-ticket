@@ -138,7 +138,7 @@ ${note(url)}
 <section class="panel" id="new"><h2>Take a job in</h2><div class="filters">${book.kinds.map((kind) => `<a class="button light" href="/shop/new/${kind.id}">${escape(kind.name)}</a>`).join('')}</div></section>
 <div class="lanes" data-live="lanes">${lane('ready', 'Ready for pickup', ready, 'Nothing waiting to be picked up.')}${lane('bench', 'On the bench', bench, 'Nothing on the bench.')}${lane('placed', 'Just in', fresh, 'Nothing new today.')}</div>
 <div data-live="texts">${texts.length ? `<section class="panel"><h2>Texts sent</h2><p class="hint">Test mode: kept here, not sent.</p><div>${texts.map((notice) => `<article class="message"><p><small class="muted">${escape(notice.channel)} to ${escape(notice.to)}</small></p><p>${escape(notice.body)}</p></article>`).join('')}</div></section>` : ''}</div>
-${done.length ? `<section class="panel"><h2>Picked up</h2><ul class="activity">${done.map((job) => `<li><span>Tag ${job.tag} · ${escape(job.kind.name)} · ${escape(job.name)}</span></li>`).join('')}</ul></section>` : ''}`;
+<div data-live="done">${done.length ? `<section class="panel"><h2>Picked up</h2><ul class="activity">${done.map((job) => `<li><span>Tag ${job.tag} · ${escape(job.kind.name)} · ${escape(job.name)}</span></li>`).join('')}</ul></section>` : ''}</div>`;
   }
 
   function intakeForm(url, kind) {

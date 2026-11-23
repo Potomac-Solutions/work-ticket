@@ -12,7 +12,8 @@ import { escape, art } from './layout.js';
 export function shell({ title, shop, body, who, owner = false, here = '', refresh = 0, waiting = 0 }) {
   const wordmark = `<a class="wordmark" href="/admin">${art.mark}<span><b>${escape(shop.short)}</b><small>Staff</small></span></a>`;
   const link = (href, words, extra = '') => `<a href="${href}"${here === href ? ' aria-current="page"' : ''}>${words}${extra}</a>`;
-  const count = waiting ? `<b aria-label="${waiting} ready for pickup">${waiting}</b>` : '';
+  // In a span of its own, so the board's page can swap the number in when it changes (data-live).
+  const count = (where) => `<span data-live="waiting-${where}">${waiting ? `<b aria-label="${waiting} ready for pickup">${waiting}</b>` : ''}</span>`;
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -36,7 +37,7 @@ export function shell({ title, shop, body, who, owner = false, here = '', refres
       <a class="close" href="#main">Close</a>
       ${wordmark}
       <nav aria-label="Staff">
-        <small>Today</small>${link('/shop', 'The shop', count)}
+        <small>Today</small>${link('/shop', 'The shop', count('side'))}
         <small>Books</small>${link('/admin', 'Overview')}${link('/admin/jobs', 'Jobs')}${link('/admin/customers', 'Customers')}${
           owner ? `
         <small>Owner</small>${link('/admin/reports', 'Reports')}${link('/admin/settings', 'Settings')}${link('/staff/people', 'Staff')}${link('/admin/outbox', 'Outbox')}` : ''
@@ -53,7 +54,7 @@ export function shell({ title, shop, body, who, owner = false, here = '', refres
     <main id="main">
       ${body}
     </main>
-    <nav class="tabs" aria-label="Quick">${link('/shop', 'Shop', count)}${link('/admin/jobs', 'Jobs')}${link('/admin/customers', 'Customers')}${link('/admin', 'Overview')}</nav>
+    <nav class="tabs" aria-label="Quick">${link('/shop', 'Shop', count('tabs'))}${link('/admin/jobs', 'Jobs')}${link('/admin/customers', 'Customers')}${link('/admin', 'Overview')}</nav>
   </div>
   <script type="module" src="${asset('app.js')}"></script>
   <script type="module">
