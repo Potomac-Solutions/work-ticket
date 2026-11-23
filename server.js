@@ -54,6 +54,8 @@ export async function createApp({ db = join(process.env.DATA_DIR ?? here, 'work-
   // The people who run the shop: an owner and the staff they invite (the kit's staff module), in the
   // shop's own log; their pages and routes are the kit's too.
   const staff = createStaff({ store: book.store, secure: production, ...(staffCost ? { cost: staffCost } : {}) });
+  // Staff are sent the shop's board: the document that says a job was taken in or moved.
+  book.staffed((request) => staff.can(staff.session(request), 'staff'));
   // A message in an address shows only if the server signed it (kit/notice), so a link can't put
   // its own words in a page's alert.
   const notices = createNotices({ secret });
@@ -114,7 +116,7 @@ ${p.render('checkout-form', { cart, place: `/t/${job.key}/pay`, checkout: job.ke
 </div>`;
   }
 
-  function board(url) {
+  function board(p, url) {
     const { open, done, notices: texts } = book.board();
     let n = 0;
     const card = (job) => {
@@ -131,11 +133,11 @@ ${p.render('checkout-form', { cart, place: `/t/${job.key}/pay`, checkout: job.ke
     const fresh = open.filter((job) => job.status === 'received');
     const bench = open.filter((job) => job.status !== 'ready' && job.status !== 'received');
     const lane = (cls, title, list, none) => `<section class="lane ${cls}" aria-label="${title}"><h2>${title} <b>${list.length}</b></h2>${list.length ? `<ul class="orders jobs">${list.map(card).join('')}</ul>` : `<p class="none">${none}</p>`}</section>`;
-    return `<section class="page-head board-head"><div><h1>The shop</h1><p class="lede">${open.length ? `${open.length} job${open.length === 1 ? '' : 's'} in the shop, ${ready.length} ready for pickup.` : 'Nothing in the shop.'} Customers see each move on their phones, and get a text when it’s ready.</p></div></section>
+    return `${p.render('board-watch', { board: 'shop', revNow: book.boardRev(), single: 'A new job', plural: 'new jobs' })}<section class="page-head board-head" data-live="head"><div><h1>The shop</h1><p class="lede">${open.length ? `${open.length} job${open.length === 1 ? '' : 's'} in the shop, ${ready.length} ready for pickup.` : 'Nothing in the shop.'} Customers see each move on their phones, and get a text when it’s ready.</p></div></section>
 ${note(url)}
 <section class="panel" id="new"><h2>Take a job in</h2><div class="filters">${book.kinds.map((kind) => `<a class="button light" href="/shop/new/${kind.id}">${escape(kind.name)}</a>`).join('')}</div></section>
-<div class="lanes">${lane('ready', 'Ready for pickup', ready, 'Nothing waiting to be picked up.')}${lane('bench', 'On the bench', bench, 'Nothing on the bench.')}${lane('placed', 'Just in', fresh, 'Nothing new today.')}</div>
-${texts.length ? `<section class="panel"><h2>Texts sent</h2><p class="hint">Test mode: kept here, not sent.</p><div>${texts.map((notice) => `<article class="message"><p><small class="muted">${escape(notice.channel)} to ${escape(notice.to)}</small></p><p>${escape(notice.body)}</p></article>`).join('')}</div></section>` : ''}
+<div class="lanes" data-live="lanes">${lane('ready', 'Ready for pickup', ready, 'Nothing waiting to be picked up.')}${lane('bench', 'On the bench', bench, 'Nothing on the bench.')}${lane('placed', 'Just in', fresh, 'Nothing new today.')}</div>
+<div data-live="texts">${texts.length ? `<section class="panel"><h2>Texts sent</h2><p class="hint">Test mode: kept here, not sent.</p><div>${texts.map((notice) => `<article class="message"><p><small class="muted">${escape(notice.channel)} to ${escape(notice.to)}</small></p><p>${escape(notice.body)}</p></article>`).join('')}</div></section>` : ''}</div>
 ${done.length ? `<section class="panel"><h2>Picked up</h2><ul class="activity">${done.map((job) => `<li><span>Tag ${job.tag} · ${escape(job.kind.name)} · ${escape(job.name)}</span></li>`).join('')}</ul></section>` : ''}`;
   }
 
@@ -352,7 +354,7 @@ ${note(url)}
       }
       if (url.pathname === '/shop' || url.pathname.startsWith('/shop/')) {
         if (!onShift) return signInPage();
-        if (url.pathname === '/shop') return staffPage(res, p, 'The shop', board(url), { here: '/shop' });
+        if (url.pathname === '/shop') return staffPage(res, p, 'The shop', board(p, url), { here: '/shop' });
         const taking = url.pathname.match(/^\/shop\/new\/([a-z]+)$/);
         const kind = taking && book.kind(taking[1]);
         if (kind) return staffPage(res, p, `New: ${kind.name}`, intakeForm(url, kind), { here: '/shop' });

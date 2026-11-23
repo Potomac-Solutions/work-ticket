@@ -32,18 +32,23 @@ const digits = (text) => String(text ?? '').replace(/\D/g, '');
 
 export async function createJobs({ db = ':memory:', now = Date.now } = {}) {
   let who = () => null;
+  let onShift = () => false;
   const sync = createSyncServer({
     log: await sqliteLog(db),
     // Pages write nothing: every collection here is the server's.
-    authorize: serverOnly([...SERVER_ONLY, 'jobs', 'access', 'notices', 'settings', 'audit'], ({ kind }) => kind === 'read'),
+    authorize: serverOnly([...SERVER_ONLY, 'jobs', 'access', 'notices', 'settings', 'audit', 'boards'], ({ kind }) => kind === 'read'),
     // A page reads the jobs its browser has opened, and nothing else.
     scope({ request }) {
       const guest = who(request);
       const keys = guest ? [...new Set([...(store.get('access', guest.pub)?.keys ?? []), ...(guest.customer ? store.under('jobs').filter((job) => job.customer === guest.customer).map((job) => job.key) : [])])] : [];
-      return keys.length ? { jobs: keys } : {};
+      // The shop's board (a number that moves when a job does) goes to staff only.
+      return { ...(keys.length ? { jobs: keys } : {}), ...(onShift(request) ? { boards: true } : {}) };
     },
   });
   const store = await syncStore(sync);
+  // A new job is a new document, which no open page was made for. One document the server keeps
+  // says "the board changed"; the shop's page follows it and fetches the board again.
+  const touch = () => store.write('boards', 'shop', { rev: (store.get('boards', 'shop')?.rev ?? 0) + 1 });
 
   // What the owner changed, over the defaults in shop.js: each kind's price, deposit and words, and
   // the shop's hours and phone. Jobs already taken in keep their price.
@@ -100,6 +105,12 @@ export async function createJobs({ db = ':memory:', now = Date.now } = {}) {
     identify(fn) {
       who = fn;
     },
+    /** `fn(request)`: is this a member of staff? They are sent the shop's board. */
+    staffed(fn) {
+      onShift = fn;
+    },
+    /** How many times the board has changed: open shop pages follow it (`boards/shop`). */
+    boardRev: () => store.get('boards', 'shop')?.rev ?? 0,
 
     /**
      * The counter takes a job in: who it's for, the kind's questions, the deposit taken. The job
@@ -128,6 +139,7 @@ export async function createJobs({ db = ':memory:', now = Date.now } = {}) {
       const tag = 1 + Math.max(1000, ...store.under('jobs').map((job) => job.tag ?? 0));
       const key = newKey();
       await stagesOf.get(kind.id).start(key, { kind: kind.id, tag, name, phone, email, answers, notes: String(form.get('notes') ?? '').trim().slice(0, 500), cents, deposit, paid: 0, customer: accountByEmail.find(email) });
+      await touch();
       return { ok: true, key, tag };
     },
 
@@ -181,6 +193,7 @@ export async function createJobs({ db = ':memory:', now = Date.now } = {}) {
       }
       const done = await stagesOf.get(kind.id).advance(key, next);
       if (!done.ok) return { error: 'Someone just moved that job. Look again.' };
+      await touch();
       let notified = null;
       if (next === 'ready') {
         const after = store.get('jobs', key);
@@ -199,6 +212,7 @@ export async function createJobs({ db = ':memory:', now = Date.now } = {}) {
       const paid = await pay.pay({ id: `job/${key}/${job.paid ?? 0}`, cents: balance, method: { card: String(form.get('card') ?? '') }, description: `${shop.name} balance, tag ${job.tag} (test mode)` });
       if (!paid.ok) return { error: paid.error === 'declined' ? 'That card was declined. Try another.' : 'That didn’t go through. Try again.' };
       await store.write('jobs', key, { paid: (job.paid ?? 0) + balance, paidOnline: balance, paidOnlineAt: now(), ref: paid.ref });
+      await touch();
       return { ok: true };
     },
 

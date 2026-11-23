@@ -240,3 +240,38 @@ test('only a shop shift takes jobs in or moves them; a page reads only the jobs 
   await shop.context.close();
   await outsider.context.close();
 });
+
+test('the shop’s board is live: a job taken in and one moved show without a reload, to staff only', async () => {
+  const floor = await device('shop floor', { shift: true });
+  await floor.page.goto(`${app.base}/shop`);
+  await floor.page.waitForFunction(() => customElements.get('board-watch'));
+  await floor.page.waitForTimeout(400);
+  // The page is the same document throughout: a reload would lose this.
+  await floor.page.evaluate(() => (window.sameDocument = true));
+  const fresh = async () => Number(await floor.page.locator('.lane.placed h2 b').innerText());
+  const before = await fresh();
+
+  const counter = await device('front counter', { javaScriptEnabled: false, shift: true });
+  const { key } = await takeIn(counter, 'processing', { name: 'Opal Livengood' });
+  await floor.page.locator('.lane.placed .ticket', { hasText: 'Opal Livengood' }).waitFor({ timeout: 5000 });
+  assert.equal(await fresh(), before + 1, 'the lane counts it');
+  await floor.page.locator('board-watch [role=status]', { hasText: 'A new job came in.' }).waitFor({ timeout: 2000 });
+
+  // The counter moves it on: the floor follows.
+  await advance(counter, key);
+  await floor.page.locator('.lane.bench .ticket', { hasText: 'Opal Livengood' }).waitFor({ timeout: 5000 });
+  assert.equal(await floor.page.evaluate(() => window.sameDocument), true, 'never reloaded');
+
+  // The swapped-in card still works: its button moves the job on.
+  const was = app.server.book.job(key).status;
+  await floor.page.locator('.lane.bench .ticket', { hasText: 'Opal Livengood' }).locator('button').click();
+  await floor.page.waitForURL(/done=/);
+  assert.notEqual(app.server.book.job(key).status, was);
+
+  // Staff are sent the board; a customer's page never is.
+  const pull = async (who) => (await who.context.request.get(`${app.base}/_zb/sync/pull?since=0`)).text();
+  const nosy = await device('nosy');
+  assert.match(await pull(counter), /boards/, 'staff pull the board');
+  assert.doesNotMatch(await pull(nosy), /boards/, 'a customer does not');
+  await Promise.all([floor, counter, nosy].map((one) => one.context.close()));
+});

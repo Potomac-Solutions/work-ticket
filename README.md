@@ -54,6 +54,13 @@ npm test         # needs Chrome or Playwright's Chromium
 
 Node 26. `SESSION_SECRET` is required in production; `DATA_DIR` says where the database file goes. Behind a proxy (Railway, Fly, a load balancer), set `TRUST_PROXIES` to how many add to `X-Forwarded-For` (usually `1`), so a wrong-password lockout falls on the device guessing and not on everyone; left unset, no header is trusted and every sign-in counts as the proxy's address.
 
+## The shop's board, live
+
+Sync follows one document, and a new job is a new document that no element on the page was made for. So the server keeps one small document of its own, `boards/shop`, and adds one to its `rev` whenever a job is taken in, moved or paid (`touch()` in `src/jobs.js`). The shop's page carries `<board-watch>` (`src/components/board-watch.zb`), which follows that document; when `rev` moves it fetches the page again and swaps in the parts marked `data-live`. Nothing flashes, the scroll stays where it was, focus returns to the same card's button, and a ticked "taken at the counter" stays ticked. It swaps once a minute too, so "day 3" stays true.
+
+- **Only staff are sent it** (`scope` in `src/jobs.js`), and it holds a number, never a job.
+- **Without JavaScript** the board is as it was: right when the page is loaded.
+
 ## What the tests prove
 
 1. Without JavaScript, the shop takes a job in; extras are added to the price; the tag's code is the customer's link on this server; the customer's page shows every stage and the balance.
@@ -74,6 +81,7 @@ The admin, customer accounts and reports (`test/admin.test.js`, over plain HTTP)
 13. A new price and deposit apply to new jobs, not ones already in; a deposit above the price is refused.
 14. The report's total matches the jobs and its CSV adds up to it; a name starting with `=` opens in a spreadsheet as text.
 15. A turned-off customer is signed out; only an owner can turn them back on.
+16. The shop's board is live: a job taken in at the counter and one moved show on another tablet without a reload, and the swapped-in card's button still works; staff are sent the board and a customer's page is not.
 
 Every behaviour was broken on purpose once to check a test fails (19 of 19 caught). Writing test 4 found a real bug: a second press of a stage's button moved the job on a further stage. Each button now says which stage it moves to.
 

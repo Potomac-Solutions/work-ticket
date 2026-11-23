@@ -1,0 +1,69 @@
+<!--
+  Keeps a staff board current without a reload. Sync follows one document, and a new job is a new
+  document no element on the page was made for; so the server keeps one small document of its
+  own (`boards/<board>`) and bumps its `rev` whenever something on the board changes. This
+  element follows that document ('use collection boards by board'), and when `rev` moves it
+  fetches the page again and swaps in the parts marked `data-live`: no flash, the scroll stays
+  put, focus returns to the same row's button, and a ticked box stays ticked. It also swaps once
+  a minute, so "day 3" and "in 12 min" stay true.
+
+  Only staff are sent `boards` (the server's `scope`), and it holds a number, never a job.
+-->
+<script>
+  'use collection boards by board'
+  import { from, watch, onMount } from '@zubra/runtime'
+  import { ephemeral } from '@zubra/sync'
+
+  let rev = from(revNow)
+  let said = ephemeral('')
+  let busy = false
+
+  // A row is found again by what its form would post: the job's key, or the rental's code.
+  const idOf = (form) => form?.querySelector('input[type=hidden][name=key], input[type=hidden][name=code]')?.value ?? ''
+  const formOf = (id) => [...document.querySelectorAll('[data-live] form')].find((form) => idOf(form) === id)
+  const rows = () => [...document.querySelectorAll('[data-live] form')].filter(idOf).length
+
+  async function swap(announce) {
+    if (busy) return
+    busy = true
+    try {
+      const response = await fetch(location.pathname, { headers: { accept: 'text/html' }, credentials: 'same-origin' })
+      // Signed out meanwhile, or an error page: leave what's there; the next press says so.
+      if (!response.ok || response.redirected) return
+      const next = new DOMParser().parseFromString(await response.text(), 'text/html')
+      const before = rows()
+      const focused = idOf(document.activeElement?.closest?.('[data-live] form'))
+      const ticked = [...document.querySelectorAll('[data-live] form input[type=checkbox]:checked')].map((box) => [idOf(box.closest('form')), box.name])
+      for (const fresh of next.querySelectorAll('[data-live]')) {
+        const old = document.querySelector(`[data-live="${fresh.dataset.live}"]`)
+        if (old) old.replaceWith(document.importNode(fresh, true))
+      }
+      for (const [id, name] of ticked) {
+        const box = formOf(id)?.querySelector(`input[type=checkbox][name="${name}"]`)
+        if (box) box.checked = true
+      }
+      if (focused) formOf(focused)?.querySelector('button')?.focus()
+      const more = rows() - before
+      if (announce && more > 0) said = more === 1 ? `${single} came in.` : `${more} ${plural} came in.`
+    } catch {
+      // Offline: the board is as it was; Sync catches up and this runs again.
+    } finally {
+      busy = false
+    }
+  }
+
+  watch(() => rev, (next, prev) => {
+    if (next !== prev) swap(true)
+  })
+  onMount(() => {
+    const tick = setInterval(() => swap(false), 60_000)
+    return () => clearInterval(tick)
+  })
+</script>
+<style>
+  :host { display: block; }
+  p { position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+</style>
+<board-watch board="" rev-now={0} single="A new one" plural="new ones">
+  <p role="status" aria-live="polite">{said}</p>
+</board-watch>
