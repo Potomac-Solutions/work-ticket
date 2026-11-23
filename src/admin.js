@@ -45,13 +45,8 @@ export function createAdmin({ book, customers, now = Date.now }) {
   };
   const turnaround = (job) => (job.ready && job.received ? (job.ready - job.received) / DAY : null);
 
-  function nav(here, owner) {
-    const link = (href, words) => `<a href="${href}"${here === href ? ' aria-current="page"' : ''}>${words}</a>`;
-    return `<nav class="admin-nav" aria-label="Admin"><small>Shop</small>${link('/admin', 'Overview')}${link('/admin/jobs', 'Jobs')}${link('/admin/customers', 'Customers')}${link('/shop', 'The board')}${
-      owner ? `<small>Owner</small>${link('/admin/reports', 'Reports')}${link('/admin/settings', 'Settings')}${link('/staff/people', 'Staff')}${link('/admin/outbox', 'Outbox')}` : ''
-    }</nav>`;
-  }
-  const frame = (here, owner, bar, body) => `<div class="admin">${nav(here, owner)}<div class="admin-body">${bar}${body}</div></div>`;
+  // Each page used to wrap itself in the admin's navigation; src/shell.js does that now.
+  const frame = (_here, _owner, _bar, body) => body;
   const jobRows = (list) =>
     list.length
       ? `<div class="table-wrap"><table><thead><tr><th scope="col">Tag</th><th scope="col">Job</th><th scope="col">Customer</th><th scope="col">Dropped off</th><th scope="col">Stage</th><th scope="col" class="num">Price</th><th scope="col" class="num">Due</th></tr></thead><tbody>${list
@@ -60,7 +55,7 @@ export function createAdmin({ book, customers, now = Date.now }) {
               `<tr><td><a href="/admin/jobs/${job.key}">${job.tag}</a></td><td>${escape(job.kind.name)}</td><td>${escape(job.name)}${job.customer ? ` <a class="muted" href="/admin/customers/${escape(job.customer)}">(account)</a>` : ''}<br><small class="muted">${escape(job.phone)}</small></td><td>${day(job.received)}</td><td>${badge(job)}</td><td class="num">${money(job.cents)}</td><td class="num">${job.balance ? money(job.balance) : '—'}</td></tr>`,
           )
           .join('')}</tbody></table></div>`
-      : '<p>None.</p>';
+      : '<p class="muted">Nothing here.</p>';
 
   function filterJobs(url) {
     const q = (url.searchParams.get('q') ?? '').trim().toLowerCase().slice(0, 80);
@@ -77,7 +72,6 @@ export function createAdmin({ book, customers, now = Date.now }) {
   }
 
   return {
-    nav,
 
     dashboard({ who, owner, bar }) {
       const at = now();
@@ -97,7 +91,7 @@ export function createAdmin({ book, customers, now = Date.now }) {
         '/admin',
         owner,
         bar,
-        `<section><h1>Overview</h1><p class="lede">${escape(shop.name)}. Good to see you, ${escape(who.name.split(' ')[0])}.</p></section>
+        `<section class="page-head"><h1>Overview</h1><p class="lede">${escape(shop.name)}. Good to see you, ${escape(who.name.split(' ')[0])}.</p></section>
 <div class="tiles">
   <div class="tile"><span>Taken in, last 30 days</span><strong>${money(value)}</strong><small>${taken30.length} jobs${before ? `; ${value >= before ? '▲' : '▼'} ${Math.abs(Math.round(((value - before) / before) * 100))}% on the 30 days before` : ''}</small></div>
   <div class="tile"><span>In the shop</span><strong>${inShop.length - ready.length}</strong><small>being worked on</small></div>
@@ -122,9 +116,9 @@ export function createAdmin({ book, customers, now = Date.now }) {
         '/admin/jobs',
         owner,
         bar,
-        `<section><h1>Jobs</h1><p class="lede">${list.length} job${list.length === 1 ? '' : 's'}, ${money(totals(list, { amount: (job) => job.cents }).amount)}; ${money(totals(list, { amount: (job) => job.balance }).amount)} still due.</p></section>
+        `<section class="page-head"><h1>Jobs</h1><p class="lede">${list.length} job${list.length === 1 ? '' : 's'}, ${money(totals(list, { amount: (job) => job.cents }).amount)}; ${money(totals(list, { amount: (job) => job.balance }).amount)} still due.</p></section>
 <form class="panel filters" method="get" action="/admin/jobs">
-  <label>Search<input name="q" value="${escape(url.searchParams.get('q') ?? '')}" placeholder="Tag, name, phone or email"></label>
+  <label class="grow">Search<input name="q" type="search" value="${escape(url.searchParams.get('q') ?? '')}" placeholder="Tag, name, phone or email"></label>
   <label>Where<select name="where">${option('shop', 'Being worked on', where)}${option('ready', 'Ready', where)}${option('late', 'Late', where)}${option('done', 'Picked up', where)}${option('all', 'All', where)}</select></label>
   <label>Kind<select name="kind">${option('', 'Any', url.searchParams.get('kind') ?? '')}${book.kinds.map((kind) => option(kind.id, kind.name, url.searchParams.get('kind'))).join('')}</select></label>
   <button type="submit">Show</button>
@@ -158,7 +152,7 @@ export function createAdmin({ book, customers, now = Date.now }) {
         '/admin/jobs',
         owner,
         bar,
-        `<section><a href="/admin/jobs">All jobs</a><h1>Tag ${job.tag}: ${escape(job.kind.name)}</h1><p class="lede">${escape(job.name)} · ${badge(job)} · <a href="/shop/tag/${job.key}">Print the tag</a></p></section>
+        `<section class="page-head"><a class="back" href="/admin/jobs">All jobs</a><h1>Tag ${job.tag}: ${escape(job.kind.name)}</h1><p class="lede">${escape(job.name)} · ${badge(job)} · <a href="/shop/tag/${job.key}">Print the tag</a></p></section>
 ${said}
 <section class="two">
   <div class="panel"><h2>The job</h2><dl>${answers}${job.notes ? `<dt>Notes</dt><dd>${escape(job.notes)}</dd>` : ''}<dt>Price</dt><dd>${money(job.cents)}</dd><dt>Deposit</dt><dd>${money(job.deposit)}</dd><dt>Paid since</dt><dd>${money(job.paid ?? 0)}${job.paidOnline ? ' online' : job.paidAtCounter ? ' at the counter' : ''}</dd><dt>Due</dt><dd>${money(job.balance)}</dd></dl>
@@ -178,8 +172,8 @@ ${said}
         '/admin/customers',
         owner,
         bar,
-        `<section><h1>Customers</h1><p class="lede">${customers.list().length} with accounts. A job taken in under an account’s email joins it.</p></section>
-<form class="panel filters" method="get" action="/admin/customers"><label>Search<input name="q" value="${escape(url.searchParams.get('q') ?? '')}" placeholder="Name or email"></label><button type="submit">Show</button><a class="button light" href="/admin/customers.csv">Download CSV</a></form>
+        `<section class="page-head"><h1>Customers</h1><p class="lede">${customers.list().length} with accounts. A job taken in under an account’s email joins it.</p></section>
+<form class="panel filters" method="get" action="/admin/customers"><label class="grow">Search<input name="q" type="search" value="${escape(url.searchParams.get('q') ?? '')}" placeholder="Name or email"></label><button type="submit">Show</button><a class="button light" href="/admin/customers.csv">Download CSV</a></form>
 <section class="panel"><div class="table-wrap"><table><thead><tr><th scope="col">Customer</th><th scope="col">Joined</th><th scope="col" class="num">Jobs</th><th scope="col" class="num">Spent</th></tr></thead><tbody>${list
           .slice((page - 1) * PAGE, page * PAGE)
           .map((one) => {
@@ -207,13 +201,13 @@ ${said}
         '/admin/customers',
         owner,
         bar,
-        `<section><a href="/admin/customers">All customers</a><h1>${escape(one.name)}</h1><p class="lede">${escape(one.email)} · joined ${dateTime(one.at)}${one.disabled ? ' · <span class="badge off">Turned off</span>' : ''}</p></section>
+        `<section class="page-head"><a class="back" href="/admin/customers">All customers</a><h1>${escape(one.name)}</h1><p class="lede">${escape(one.email)} · joined ${dateTime(one.at)}${one.disabled ? ' · <span class="badge off">Turned off</span>' : ''}</p></section>
 ${said}
 <div class="tiles"><div class="tile"><span>Jobs</span><strong>${jobs.length}</strong></div><div class="tile"><span>Spent</span><strong>${money(totals(jobs, { amount: (job) => job.cents }).amount)}</strong></div><div class="tile"><span>Due now</span><strong>${money(totals(jobs, { amount: (job) => job.balance }).amount)}</strong></div></div>
 <section class="panel"><h2>Jobs</h2>${jobRows(jobs)}</section>
 ${
   owner
-    ? `<section class="panel"><h2>Account</h2><p>Turning an account off signs it out everywhere; its jobs stay.</p><div class="filters"><form method="post" action="/admin/customers/${escape(one.customer)}/disabled"><input type="hidden" name="disabled" value="${one.disabled ? 'no' : 'yes'}"><button type="submit" class="${one.disabled ? '' : 'button light'}">${one.disabled ? 'Turn back on' : 'Turn off'}</button></form>${one.disabled ? '' : `<form method="post" action="/admin/customers/${escape(one.customer)}/reset"><button class="button light" type="submit">Email a reset link</button></form>`}</div></section>`
+    ? `<section class="panel"><h2>Account</h2><p>Turning an account off signs it out everywhere; its jobs stay.</p><div class="filters">${one.disabled ? `<form method="post" action="/admin/customers/${escape(one.customer)}/disabled"><input type="hidden" name="disabled" value="no"><button type="submit">Turn back on</button></form>` : `<details class="confirm"><summary>Turn this account off…</summary><div class="sure"><p><strong>${escape(one.name)} will be signed out everywhere and won’t be able to sign in.</strong> What they have with the shop stays, and an owner can turn the account back on.</p><form method="post" action="/admin/customers/${escape(one.customer)}/disabled"><input type="hidden" name="disabled" value="yes"><button type="submit">Yes, turn it off</button></form></div></details>`}${one.disabled ? '' : `<form method="post" action="/admin/customers/${escape(one.customer)}/reset"><button class="button light" type="submit">Email a reset link</button></form>`}</div></section>`
     : ''
 }`,
       );
@@ -243,8 +237,8 @@ ${
         '/admin/reports',
         owner,
         bar,
-        `<section><h1>Reports</h1><p class="lede">${r.label}, by ${r.by}, in the shop’s time (${escape(zone)}). Counted on the day each job came in.</p></section>
-<div class="panel filters" role="group" aria-label="Range">${Object.entries(RANGES).map(([key, one]) => `<a class="button${key === r.key ? '' : ' light'}" href="?range=${key}"${key === r.key ? ' aria-current="true"' : ''}>${one.label}</a>`).join('')}</div>
+        `<section class="page-head"><h1>Reports</h1><p class="lede">${r.label}, by ${r.by}, in the shop’s time (${escape(zone)}). Counted on the day each job came in.</p></section>
+<div class="segments" role="group" aria-label="Range">${Object.entries(RANGES).map(([key, one]) => `<a href="?range=${key}"${key === r.key ? ' aria-current="true"' : ''}>${one.label}</a>`).join('')}</div>
 <div class="tiles">
   <div class="tile"><span>Taken in</span><strong>${money(sum.amount)}</strong></div>
   <div class="tile"><span>Jobs</span><strong>${sum.count}</strong></div>
@@ -255,7 +249,7 @@ ${
 <section class="panel"><h2>Taken in by ${r.by}</h2>${barChart(r.buckets.map((b) => ({ label: short(b.start, r.by), value: b.amount, tip: `${short(b.start, r.by)}: ${b.count} jobs, ${money(b.amount)}` })), { name: 'Taken in', format: money })}<p><a class="button light" href="/admin/reports.csv?range=${r.key}">Download CSV</a></p></section>
 <section class="panel"><h2>Jobs by ${r.by}</h2>${barChart(r.buckets.map((b) => ({ label: short(b.start, r.by), value: b.count })), { name: 'Jobs' })}</section>
 <section class="two">
-  <div class="panel"><h2>By kind</h2>${byKind.length ? rankBars(byKind.map((row) => ({ label: `${row.key} (${row.count})`, value: row.amount })), { format: money }) : '<p>None.</p>'}<h2>Extras chosen</h2>${extras.size ? rankBars([...extras].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value }))) : '<p>None.</p>'}</div>
+  <div class="panel"><h2>By kind</h2>${byKind.length ? rankBars(byKind.map((row) => ({ label: `${row.key} (${row.count})`, value: row.amount })), { format: money }) : '<p class="muted">Nothing here.</p>'}<h2>Extras chosen</h2>${extras.size ? rankBars([...extras].sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value }))) : '<p class="muted">Nothing here.</p>'}</div>
   <div class="panel"><h2>Days from drop-off to ready</h2><p class="muted">Average for jobs that became ready in the range, against the usual.</p>${rankBars(speeds.map((row) => ({ label: row.label, value: Math.round(row.value) })), { format: (n) => `${n} days` })}<ul>${speeds.map((row) => `<li>${escape(row.label)}: usually ${row.usual} days; ${row.count} ready in the range</li>`).join('')}</ul></div>
 </section>`,
       );
@@ -276,7 +270,7 @@ ${
         '/admin/settings',
         owner,
         bar,
-        `<section><h1>Settings</h1><p class="lede">Prices, deposits and the words customers see. New jobs use a new price; jobs already in keep theirs.</p></section>
+        `<section class="page-head"><h1>Settings</h1><p class="lede">Prices, deposits and the words customers see. New jobs use a new price; jobs already in keep theirs.</p></section>
 ${said}
 <section class="two">${book.kinds
           .map(
@@ -300,7 +294,7 @@ ${said}
         '/admin/outbox',
         owner,
         bar,
-        `<section><h1>Outbox</h1><p class="lede">This demo sends no real texts or email. What it would have sent is here, newest first.</p></section>
+        `<section class="page-head"><h1>Outbox</h1><p class="lede">This demo sends no real texts or email. What it would have sent is here, newest first.</p></section>
 <section class="panel">${list.length ? `<div class="table-wrap"><table><thead><tr><th scope="col">When</th><th scope="col">To</th><th scope="col">Message</th></tr></thead><tbody>${list.slice(0, 100).map((one) => `<tr><td>${dateTime(one.at)}</td><td>${one.channel === 'sms' ? 'Text' : 'Email'} to ${escape(one.to)}</td><td>${one.subject ? `<strong>${escape(one.subject)}</strong><br>` : ''}<span style="white-space:pre-wrap">${escape(one.body)}</span></td></tr>`).join('')}</tbody></table></div>` : '<p>Nothing sent yet.</p>'}</section>`,
       );
     },

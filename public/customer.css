@@ -1,0 +1,81 @@
+/* The customer's pages: the bag, pickup time, checkout, an order on its way, the account, signing in. */
+
+.back { justify-self: start; font-weight: 600; text-decoration: none; color: var(--muted-foreground); }
+.back::before { content: "← "; }
+.back:hover { color: var(--ink); }
+.page-head { display: grid; gap: 0.4rem; }
+.page-head .lede { margin: 0; }
+
+/* The bag and the pickup time, side by side when there's room. */
+.bag-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 1.25rem; align-items: start; }
+@media (max-width: 52rem) { .bag-grid { grid-template-columns: 1fr; } }
+.empty-bag { justify-items: start; }
+
+.times { display: grid; gap: 0.5rem; margin: 0; padding: 0; border: 0; min-width: 0; }
+.times legend { padding: 0; margin-bottom: 0.5rem; font-weight: 700; text-transform: capitalize; }
+.times .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.6rem, 1fr)); gap: 0.5rem; }
+.time { position: relative; display: block; font-weight: 600; }
+.time input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.time span { display: grid; place-items: center; min-height: 2.9rem; padding: 0.3rem 0.4rem; border-radius: var(--radius-sm); background: #fff; box-shadow: inset 0 0 0 1px var(--input); font-variant-numeric: tabular-nums; text-align: center; line-height: 1.15; transition: background-color 0.12s, box-shadow 0.12s; }
+.time small { display: block; font-size: 0.72rem; font-weight: 600; color: var(--muted-foreground); }
+.time input:hover + span { box-shadow: inset 0 0 0 2px var(--brand); }
+.time input:checked + span { background: var(--brand); color: #fff; box-shadow: none; }
+.time input:focus-visible + span { outline: 3px solid var(--ring); outline-offset: 2px; }
+.time input:disabled { cursor: not-allowed; }
+.time input:disabled + span { background: var(--muted); color: var(--muted-foreground); box-shadow: none; text-decoration: line-through; }
+.time input:disabled + span small { text-decoration: none; }
+.chosen { margin: 0; padding: 0.7rem 0.9rem; border-radius: var(--radius-sm); background: var(--note); font-weight: 600; }
+
+/* Checkout. */
+.checkout { width: min(40rem, 100%); margin-inline: auto; display: grid; gap: 1.25rem; }
+.summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; padding: 0.9rem 1.1rem; border-radius: var(--radius); background: var(--brand); color: #fff; }
+.summary p { margin: 0; }
+.summary strong { display: block; font-family: var(--font-heading); font-size: 1.3rem; font-weight: 600; }
+.summary a { font-weight: 700; }
+.safe { margin: 0; color: var(--muted-foreground); font-size: 0.92rem; text-align: center; }
+
+/* An order on its way. */
+.status { width: min(44rem, 100%); margin-inline: auto; display: grid; gap: 1.25rem; }
+.status .kicker { margin: 0; }
+.receipt { display: grid; gap: 0.75rem; padding: 1.4rem 1.4rem 1.2rem; background: #fff; border-radius: 0.4rem; border-top: 0.5rem solid var(--brand); box-shadow: var(--shadow), 0 0 0 1px var(--line); }
+.receipt ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.45rem; }
+.receipt li { display: flex; justify-content: space-between; gap: 1rem; font-variant-numeric: tabular-nums; }
+.receipt .sum { display: flex; justify-content: space-between; gap: 1rem; margin: 0; padding-top: 0.75rem; border-top: 1px dashed var(--input); font-weight: 700; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.receipt .fine { margin: 0; color: var(--muted-foreground); font-size: 0.88rem; }
+.after { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.75rem; }
+
+/* The account: what's on its way first, then what's been. */
+.olist { margin: 0; padding: 0; list-style: none; display: grid; }
+.olist li + li { border-top: 1px solid var(--line); }
+.olist a { display: grid; grid-template-columns: 1fr auto; gap: 0.15rem 1rem; padding: 0.85rem 0.25rem; text-decoration: none; border-radius: var(--radius-sm); }
+.olist a:hover { background: var(--muted); }
+.olist .when { font-weight: 700; }
+.olist .paid { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.olist .what { color: var(--muted-foreground); font-size: 0.95rem; }
+.olist .state { text-align: right; }
+.panel.live-orders { background: var(--brand); color: #fff; }
+.panel.live-orders .olist li + li { border-color: rgb(255 255 255 / 0.2); }
+.panel.live-orders .olist a:hover { background: rgb(255 255 255 / 0.12); }
+.panel.live-orders .what { color: var(--on-night); }
+.panel.live-orders .badge { background: var(--glow); color: var(--night); }
+.figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.figures li { padding: 0.9rem 1rem; border-radius: var(--radius); background: var(--card); box-shadow: 0 0 0 1px var(--line); }
+.figures strong { display: block; font-family: var(--font-heading); font-size: 1.6rem; font-weight: 600; line-height: 1.15; }
+.figures span { color: var(--muted-foreground); font-size: 0.9rem; }
+
+/* Signing in and up: one narrow card. */
+.auth { width: min(27rem, 100%); margin: clamp(0rem, 4vw, 2rem) auto 0; display: grid; gap: 1.25rem; }
+.auth .panel { gap: 1rem; padding: 1.5rem; }
+.auth form button[type=submit] { justify-self: stretch; min-height: 3rem; }
+.auth .alt { margin: 0; text-align: center; color: var(--muted-foreground); }
+
+@media print {
+  .back, .after, order-progress { display: none !important; }
+  .receipt { box-shadow: none; border: 1px solid #999; }
+}
+
+/* A job's facts and the ready badge. */
+.facts { grid-template-columns: max-content 1fr; }
+.badge.ready { background: var(--glow); color: var(--on-glow); }
+.badge.late { background: #fbe3df; color: #7a1f17; }
+.receipt .facts dd { text-align: right; font-variant-numeric: tabular-nums; }

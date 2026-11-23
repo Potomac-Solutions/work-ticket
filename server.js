@@ -19,12 +19,16 @@ import { createNotices } from '@potomac-solutions/kit/notice';
 import { loadQr } from '@journey-to-code/symbology';
 import { createJobs } from './src/jobs.js';
 import { layout, escape } from './src/layout.js';
+import { landing } from './src/site.js';
+import { shell } from './src/shell.js';
+import { cards } from './src/tables.js';
+import { serveAsset } from './src/assets.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const components = join(here, 'src', 'components');
 const money = (cents) => `$${(cents / 100).toFixed(2)}`;
 
-export async function createApp({ db = join(process.env.DATA_DIR ?? here, 'work-ticket.db'), cache = true, secret = process.env.SESSION_SECRET, now = Date.now, staffCost } = {}) {
+export async function createApp({ db = join(process.env.DATA_DIR ?? here, 'work-ticket.db'), cache = true, secret = process.env.SESSION_SECRET, now = Date.now, staffCost, publicUrl = process.env.PUBLIC_URL ?? '' } = {}) {
   if (!secret) {
     if (process.env.NODE_ENV === 'production') throw new Error('Set SESSION_SECRET.');
     secret = 'work-ticket-development-only';
@@ -53,10 +57,13 @@ export async function createApp({ db = join(process.env.DATA_DIR ?? here, 'work-
   // A message in an address shows only if the server signed it (kit/notice), so a link can't put
   // its own words in a page's alert.
   const notices = createNotices({ secret });
-  const pages = staffPages({ staff, notices, proxies, home: '/admin', business: shop.name, secure: production, render: (res, title, body) => page(res, zubra.page(), title, body) });
+  const pages = staffPages({ staff, notices, proxies, home: '/admin', business: shop.name, secure: production, // A signed-in member of staff sees the kit's pages (people, their password) inside the staff shell;
+    // signing in and accepting an invite are a narrow card on the shop's own page.
+    render: (res, title, body) => (staff.can(res.who, 'staff') ? staffPage(res, zubra.page(), title, body, { here: title === 'People' ? '/staff/people' : '' }) : page(res, zubra.page(), title, `<div class="auth">${body}</div>`)) });
   const send = (res, status, html) => (res.writeHead(status, { 'content-type': 'text/html; charset=utf-8' }), res.end(html));
   const back = (res, location) => (res.writeHead(303, { location: notices.sign(location) }), res.end());
   const page = (res, p, title, body, { status = 200, ...options } = {}) => send(res, status, p.finish(layout({ title, shop, body, ...options })));
+  const staffPage = (res, p, title, body, { status = 200, ...options } = {}) => send(res, status, p.finish(shell({ title, shop, body: cards(body), who: res.who, owner: staff.can(res.who, 'owner'), waiting: book.board().open.filter((job) => job.status === 'ready').length, ...options })));
   const admin = createAdmin({ book, customers, now });
   const downloadCsv = (res, name, text) => (res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${name}"`, 'cache-control': 'no-store' }), res.end(text));
   const withDone = (path, words) => `${path}?done=${encodeURIComponent(words)}`;
@@ -84,45 +91,52 @@ export async function createApp({ db = join(process.env.DATA_DIR ?? here, 'work-
 
   function home(url, account) {
     const mine = account ? book.jobsOf(account.customer).filter((job) => job.status !== 'picked-up') : [];
-    return `<section class="hero"><h1>${escape(shop.short)}</h1><p class="lede">Taxidermy and deer processing in ${escape(shop.town)}. Drop it off, follow every stage from your phone, get a text when it’s ready, and pay online if you like. ${escape(shop.hours)}.</p><div class="actions"><a class="go" href="#track">Track your job</a>${account ? '<a class="button light" href="/account">Your jobs</a>' : '<a class="button light" href="/account/sign-up">Make an account</a>'}</div></section>
-${note(url)}
-${mine.length ? `<section class="panel"><h2>Your jobs in the shop</h2><ul>${mine.map((job) => `<li><a href="/t/${job.key}">Tag ${job.tag}</a> · ${escape(job.kind.name)} · ${escape(book.stageName(job.status))}</li>`).join('')}</ul></section>` : ''}
-<form class="panel" id="track" method="post" action="/track"><h2>Find your job</h2><p class="muted">Your tag has a code that opens your job; or give the tag number and your phone.</p>
-  <label>Tag number<input name="tag" inputmode="numeric" autocomplete="off" required></label>
-  <label>Last four digits of your phone<input name="phone" inputmode="numeric" autocomplete="off" maxlength="4" required></label>
-  <button type="submit">Find it</button></form>
-<section><h2>What we do</h2><ul class="fleets">${book.kinds.map((kind) => `<li class="fleet"><h2>${escape(kind.name)}</h2><p>${escape(kind.blurb)}</p><p class="price">From ${money(kind.cents)} · ${escape(kind.turnaround)}</p></li>`).join('')}</ul></section>
-<section class="two"><div class="panel"><h2>How it works</h2><ol><li>Drop it off at the counter; we take a deposit and give you a tag.</li><li>Scan the tag to follow each stage. We text you when it’s ready.</li><li>Pay the balance online or at pickup.</li></ol></div><div class="panel"><h2>Visit</h2><dl class="facts"><dt>Where</dt><dd>${escape(shop.town)}</dd><dt>Hours</dt><dd>${escape(shop.hours)}</dd><dt>Phone</dt><dd>${escape(shop.phone)}</dd></dl></div></section>`;
+    return landing({ shop, kinds: book.kinds, money, mine, said: note(url), account, stageName: book.stageName });
   }
 
   function jobPage(p, url, job) {
-    return `<section><p class="lede">Tag ${job.tag} · dropped off ${day(job.received)}</p><h1>${escape(job.kind.name)}</h1><p class="lede">For ${escape(job.name)}. ${escape(job.kind.turnaround)}, start to finish.</p></section>
+    return `<div class="status">
+<section class="page-head"><p class="kicker">Tag ${job.tag} · dropped off ${day(job.received)}</p><h1>${escape(job.kind.name)}</h1><p class="lede">For ${escape(job.name)}. ${escape(job.kind.turnaround)}, start to finish.</p></section>
 ${note(url)}
 ${p.render('job-progress', { job: job.key, steps: job.kind.stages, names: Object.fromEntries(job.kind.stages.map((stage) => [stage, book.stageName(stage)])), statusNow: job.status, paidNow: job.paid ?? 0, cents: job.cents, deposit: job.deposit, pay: `/t/${job.key}/pay` })}
-<section class="panel"><h2>The job</h2><dl class="facts">${answersOf(job)}<dt>Price</dt><dd>${money(job.cents)}</dd><dt>Deposit</dt><dd>${money(job.deposit)}</dd></dl></section>`;
+<section class="receipt" aria-label="The job"><h2>The job</h2><dl class="facts">${answersOf(job)}<dt>Price</dt><dd>${money(job.cents)}</dd><dt>Deposit</dt><dd>${money(job.deposit)}</dd></dl><p class="fine">Questions? Call ${escape(shop.phone)} with tag ${job.tag}.</p></section>
+<p class="after">${hasAccount(job) ? '<a class="button light" href="/account">All your jobs</a>' : '<a class="button light" href="/account/sign-up">Keep your jobs in an account</a>'}</p>
+</div>`;
   }
+  const hasAccount = (job) => Boolean(job.customer);
 
   function payPage(p, url, job) {
     const cart = { lines: [{ item: job.key, qty: 1, name: `Balance, ${job.kind.name.toLowerCase()} (tag ${job.tag})`, total: job.balance }], cents: job.balance, ready: job.balance > 0 };
-    return `<section><a href="/t/${job.key}">Back to your job</a><h1>Pay the balance</h1><p class="lede">Tag ${job.tag}. Pay now and pickup is quicker.</p></section>
-${p.render('checkout-form', { cart, place: `/t/${job.key}/pay`, checkout: job.key, problem: notices.read(url).problem, testMode: true, name: job.name, email: job.email ?? '', phone: job.phone ?? '' })}`;
+    return `<div class="checkout">
+<section class="page-head"><a class="back" href="/t/${job.key}">Back to your job</a><h1>Pay the balance</h1></section>
+<div class="summary"><p>Tag ${job.tag}<strong>${escape(job.kind.name)}</strong></p><p>Pay now and pickup is quicker.</p></div>
+${p.render('checkout-form', { cart, place: `/t/${job.key}/pay`, checkout: job.key, problem: notices.read(url).problem, testMode: true, name: job.name, email: job.email ?? '', phone: job.phone ?? '' })}
+</div>`;
   }
 
   function board(url) {
-    const { open, done, notices } = book.board();
+    const { open, done, notices: texts } = book.board();
+    let n = 0;
     const card = (job) => {
       const next = job.kind.stages[job.kind.stages.indexOf(job.status) + 1];
       const owed = next === 'picked-up' && job.balance > 0;
-      return `<li class="job"><p><strong>Tag ${job.tag}</strong> · ${escape(job.kind.name)}</p><p>${escape(job.name)} · ${escape(job.phone)}</p><p class="stage">${escape(book.stageName(job.status))}${job.balance ? ` · ${money(job.balance)} due` : ' · paid'}</p>
-<form method="post" action="/shop/advance"><input type="hidden" name="key" value="${job.key}"><input type="hidden" name="to" value="${next}">${owed ? `<label class="check"><input type="checkbox" name="paidAtCounter" value="yes"> ${money(job.balance)} taken at the counter</label>` : ''}<button type="submit">${escape(book.stageName(next))}</button></form>
+      const days = Math.floor((now() - job.received) / 86_400_000);
+      const late = job.status !== 'ready' && days > job.kind.turnaroundDays;
+      const key = ++n <= 9 ? n : 0;
+      return `<li class="ticket job${late ? ' late' : ''}"><div class="top"><span class="at">Tag ${job.tag}</span><span class="badge ${late ? 'off' : job.status === 'ready' ? 'handled' : ''}">${late ? `${days - job.kind.turnaroundDays} days late` : days === 0 ? 'today' : `day ${days}`}</span></div><p class="who">${escape(job.kind.name)}</p><p>${escape(job.name)} · ${escape(job.phone)}</p><p class="stage">${escape(book.stageName(job.status))}${job.balance ? ` · ${money(job.balance)} due` : ' · paid'}</p>
+<form method="post" action="/shop/advance"><input type="hidden" name="key" value="${job.key}"><input type="hidden" name="to" value="${next}">${owed ? `<label class="check"><input type="checkbox" name="paidAtCounter" value="yes"> ${money(job.balance)} taken at the counter</label>` : ''}<button type="submit"${key ? ` data-key="${key}"` : ''}>${escape(book.stageName(next))}${key ? `<kbd aria-hidden="true">${key}</kbd>` : ''}</button></form>
 <a href="/shop/tag/${job.key}">Tag</a></li>`;
     };
-    return `<section><h1>The shop</h1><p class="lede">Move each job along; customers see it on their phones, and get a text when it’s ready.</p></section>
+    const ready = open.filter((job) => job.status === 'ready');
+    const fresh = open.filter((job) => job.status === 'received');
+    const bench = open.filter((job) => job.status !== 'ready' && job.status !== 'received');
+    const lane = (cls, title, list, none) => `<section class="lane ${cls}" aria-label="${title}"><h2>${title} <b>${list.length}</b></h2>${list.length ? `<ul class="orders jobs">${list.map(card).join('')}</ul>` : `<p class="none">${none}</p>`}</section>`;
+    return `<section class="page-head board-head"><div><h1>The shop</h1><p class="lede">${open.length ? `${open.length} job${open.length === 1 ? '' : 's'} in the shop, ${ready.length} ready for pickup.` : 'Nothing in the shop.'} Customers see each move on their phones, and get a text when it’s ready.</p></div></section>
 ${note(url)}
-<section class="panel"><h2>Take a job in</h2><p>${book.kinds.map((kind) => `<a class="button light" href="/shop/new/${kind.id}">${escape(kind.name)}</a>`).join(' ')}</p></section>
-<section><h2>In the shop</h2>${open.length ? `<ul class="jobs">${open.map(card).join('')}</ul>` : '<p>Nothing in the shop.</p>'}</section>
-${notices.length ? `<section class="panel"><h2>Texts sent (test mode: kept here, not sent)</h2><ul>${notices.map((notice) => `<li><small>${escape(notice.channel)} to ${escape(notice.to)}</small><br>${escape(notice.body)}</li>`).join('')}</ul></section>` : ''}
-${done.length ? `<section class="panel"><h2>Picked up</h2><ul>${done.map((job) => `<li>Tag ${job.tag} · ${escape(job.kind.name)} · ${escape(job.name)}</li>`).join('')}</ul></section>` : ''}`;
+<section class="panel" id="new"><h2>Take a job in</h2><div class="filters">${book.kinds.map((kind) => `<a class="button light" href="/shop/new/${kind.id}">${escape(kind.name)}</a>`).join('')}</div></section>
+<div class="lanes">${lane('ready', 'Ready for pickup', ready, 'Nothing waiting to be picked up.')}${lane('bench', 'On the bench', bench, 'Nothing on the bench.')}${lane('placed', 'Just in', fresh, 'Nothing new today.')}</div>
+${texts.length ? `<section class="panel"><h2>Texts sent</h2><p class="hint">Test mode: kept here, not sent.</p><div>${texts.map((notice) => `<article class="message"><p><small class="muted">${escape(notice.channel)} to ${escape(notice.to)}</small></p><p>${escape(notice.body)}</p></article>`).join('')}</div></section>` : ''}
+${done.length ? `<section class="panel"><h2>Picked up</h2><ul class="activity">${done.map((job) => `<li><span>Tag ${job.tag} · ${escape(job.kind.name)} · ${escape(job.name)}</span></li>`).join('')}</ul></section>` : ''}`;
   }
 
   function intakeForm(url, kind) {
@@ -130,27 +144,27 @@ ${done.length ? `<section class="panel"><h2>Picked up</h2><ul>${done.map((job) =
       q.many
         ? `<fieldset class="choices"><legend>${escape(q.label)}</legend>${q.choices.map(([label, cents]) => `<label class="check"><input type="checkbox" name="${q.id}" value="${escape(label)}"> ${escape(label)} (+${money(cents)})</label>`).join('')}</fieldset>`
         : `<label>${escape(q.label)}<select name="${q.id}" required><option value="">Choose…</option>${q.choices.map((choice) => `<option>${escape(choice)}</option>`).join('')}</select></label>`;
-    return `<section><a href="/shop">Back to the shop</a><h1>${escape(kind.name)}</h1><p class="lede">${money(kind.cents)} before extras. ${escape(kind.turnaround)}.</p></section>
+    return `<section class="page-head"><a class="back" href="/shop">The shop</a><h1>${escape(kind.name)}</h1><p class="lede">${money(kind.cents)} before extras. ${escape(kind.turnaround)}.</p></section>
 ${note(url)}
-<form class="panel" method="post" action="/shop/new/${kind.id}">
-  <label>Customer’s name<input name="name" autocomplete="off" required></label>
-  <label>Phone, for the ready text<input name="phone" type="tel" autocomplete="off" required></label>
-  <label>Email (optional)<input name="email" type="email" autocomplete="off"></label>
+<form class="panel intake" method="post" action="/shop/new/${kind.id}">
+  <div class="two"><label>Customer’s name<input name="name" autocomplete="off" required></label>
+  <label>Phone, for the ready text<input name="phone" type="tel" inputmode="tel" autocomplete="off" required></label></div>
+  <label>Email<span class="hint">Optional. A job under an account’s email joins that account.</span><input name="email" type="email" inputmode="email" autocapitalize="none" autocomplete="off"></label>
   ${kind.questions.map(question).join('')}
   <label>Notes<textarea name="notes" rows="2"></textarea></label>
   <label>Deposit taken today, in dollars<input name="deposit" inputmode="decimal" value="${(kind.deposit / 100).toFixed(2)}"></label>
-  <button type="submit">Take it in and print the tag</button>
+  <button type="submit" class="go lg">Take it in and print the tag</button>
 </form>`;
   }
 
   function tag(job, req) {
     const link = `${origin(req)}/t/${job.key}`;
-    return `<section class="tag"><p class="lede">${escape(shop.name)} · ${escape(shop.phone)}</p><h1>Tag ${job.tag}</h1>
+    return `<section class="tag panel"><p class="lede">${escape(shop.name)} · ${escape(shop.phone)}</p><h1>Tag ${job.tag}</h1>
 <p><strong>${escape(job.name)}</strong> · ${escape(job.kind.name)} · dropped off ${day(job.received)}</p>
 <dl class="facts">${answersOf(job)}</dl>
 <div class="code">${qr.svg(qr.encode(link), { title: `Job ${job.tag}` })}</div>
 <p>Scan to follow this job, or go to ${escape(origin(req))} with tag ${job.tag} and your phone.</p>
-<p><a href="/shop">Back to the shop</a> · <a href="/t/${job.key}">The customer’s page</a></p></section>`;
+<p class="tools"><a class="button light" href="/shop">Back to the shop</a> <a class="button light" href="/t/${job.key}">The customer’s page</a></p></section>`;
   }
 
   const server = createServer(async (req, res) => {
@@ -159,13 +173,19 @@ ${note(url)}
       if (zubra.handle(req, res)) return;
       const url = new URL(req.url, 'http://localhost');
       if (url.pathname === '/health') return res.writeHead(200, { 'content-type': 'text/plain' }).end('ok');
-      if (url.pathname === '/favicon.ico') return res.writeHead(204).end();
+      if (serveAsset(req, res, url)) return;
+      // A made-up shop asks not to be listed; a real one (shop.listed) lists its public page only.
+      if (url.pathname === '/robots.txt') return res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }).end(shop.listed ? `User-agent: *\nDisallow: /admin\nDisallow: /shop\nDisallow: /staff\nDisallow: /account\nDisallow: /t/\n${publicUrl ? `Sitemap: ${publicUrl}/sitemap.xml\n` : ''}` : 'User-agent: *\nDisallow: /\n');
+      if (url.pathname === '/sitemap.xml' && shop.listed && publicUrl) return res.writeHead(200, { 'content-type': 'application/xml; charset=utf-8' }).end(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${escape(publicUrl)}/</loc></url></urlset>`);
+      if (url.pathname === '/favicon.ico') return res.writeHead(302, { location: '/assets/favicon.svg' }).end();
       const account = customers.session(req);
       const guest = { ...guests.ensure(req, res), customer: account?.customer };
       const who = staff.session(req);
       const onShift = staff.can(who, 'staff');
       const owner = staff.can(who, 'owner');
+      res.who = who;
       const nav = { customer: account, staff: onShift };
+      const signInPage = () => show(zubra.page(), 'Sign in', `<div class="auth">${pages.signIn(url)}</div>`);
       const show = (p, title, body, options = {}) => page(res, p, title, body, { nav, ...options });
       if (url.pathname.startsWith('/account') || url.pathname.startsWith('/admin')) res.setHeader('cache-control', 'no-store');
 
@@ -288,7 +308,7 @@ ${note(url)}
 
       if (await pages.handle(req, res, url, null)) return;
       const p = zubra.page();
-      if (url.pathname === '/') return show(p, 'Track your job', home(url, account), { here: '/' });
+      if (url.pathname === '/') return show(p, 'Track your job', home(url, account), { here: '/', landing: true, canonical: publicUrl ? `${publicUrl}/` : '' });
 
       // A customer's pages.
       if (url.pathname === '/account') return account ? show(p, 'Your account', accountPages.account({ book, customer: account, said: note(url) }), { here: '/account' }) : back(res, '/account/sign-in');
@@ -302,26 +322,25 @@ ${note(url)}
 
       // The admin: staff only; reports, settings and the outbox for owners.
       if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) {
-        if (!onShift) return show(p, 'Sign in', pages.signIn(url));
-        const bar = pages.bar(who);
+        if (!onShift) return signInPage();
         const said = note(url);
-        const wide = { wide: true, here: '/admin' };
-        if (url.pathname === '/admin') return show(p, 'Overview', admin.dashboard({ who, owner, bar }), wide);
-        if (url.pathname === '/admin/jobs') return show(p, 'Jobs', admin.jobs({ url, owner, bar }), wide);
+        const at = (here) => ({ here });
+        if (url.pathname === '/admin') return staffPage(res, p, 'Overview', admin.dashboard({ who, owner }), at('/admin'));
+        if (url.pathname === '/admin/jobs') return staffPage(res, p, 'Jobs', admin.jobs({ url, owner }), at('/admin/jobs'));
         if (url.pathname === '/admin/jobs.csv') return downloadCsv(res, 'jobs.csv', admin.jobsCsv(url));
         const oneJob = url.pathname.match(/^\/admin\/jobs\/(j[a-z0-9]+)$/);
         const job = oneJob && book.job(oneJob[1]);
-        if (job) return show(p, `Tag ${job.tag}`, admin.job({ job, owner, bar, said }), wide);
-        if (url.pathname === '/admin/customers') return show(p, 'Customers', admin.customers({ url, owner, bar }), wide);
+        if (job) return staffPage(res, p, `Tag ${job.tag}`, admin.job({ job, owner, said }), at('/admin/jobs'));
+        if (url.pathname === '/admin/customers') return staffPage(res, p, 'Customers', admin.customers({ url, owner }), at('/admin/customers'));
         if (url.pathname === '/admin/customers.csv') return downloadCsv(res, 'customers.csv', admin.customersCsv());
         const oneCustomer = url.pathname.match(/^\/admin\/customers\/(c[a-z0-9]+)$/);
         const one = oneCustomer && customers.get(oneCustomer[1]);
-        if (one) return show(p, one.name, admin.customer({ one, owner, bar, said }), wide);
-        if (['/admin/reports', '/admin/reports.csv', '/admin/settings', '/admin/outbox'].includes(url.pathname) && !owner) return show(p, 'Owners only', '<section><h1>Owners only</h1><p class="lede">Ask an owner to see this page.</p><p><a href="/admin">Back to the overview</a></p></section>', { status: 403 });
-        if (url.pathname === '/admin/reports') return show(p, 'Reports', admin.reports({ url, owner, bar }), wide);
+        if (one) return staffPage(res, p, one.name, admin.customer({ one, owner, said }), at('/admin/customers'));
+        if (['/admin/reports', '/admin/reports.csv', '/admin/settings', '/admin/outbox'].includes(url.pathname) && !owner) return staffPage(res, p, 'Owners only', '<section class="page-head"><h1>Owners only</h1><p class="lede">Reports, settings and the outbox are for owners. Ask one to show you this page.</p></section><p><a class="button light" href="/admin">Back to the overview</a></p>', { status: 403 });
+        if (url.pathname === '/admin/reports') return staffPage(res, p, 'Reports', admin.reports({ url, owner }), at('/admin/reports'));
         if (url.pathname === '/admin/reports.csv') return downloadCsv(res, 'taken-in.csv', admin.reportCsv(url));
-        if (url.pathname === '/admin/settings') return show(p, 'Settings', admin.settings({ owner, bar, said }), wide);
-        if (url.pathname === '/admin/outbox') return show(p, 'Outbox', admin.outbox({ owner, bar }), wide);
+        if (url.pathname === '/admin/settings') return staffPage(res, p, 'Settings', admin.settings({ owner, said }), at('/admin/settings'));
+        if (url.pathname === '/admin/outbox') return staffPage(res, p, 'Outbox', admin.outbox({ owner }), at('/admin/outbox'));
         return send(res, 404, 'Not found');
       }
       const tracking = url.pathname.match(/^\/t\/(j[a-z0-9]+)(\/pay)?$/);
@@ -332,14 +351,14 @@ ${note(url)}
         return show(p, `Tag ${job.tag}`, jobPage(p, url, job));
       }
       if (url.pathname === '/shop' || url.pathname.startsWith('/shop/')) {
-        if (!onShift) return show(p, 'Sign in', pages.signIn(url));
-        if (url.pathname === '/shop') return show(p, 'The shop', pages.bar(who) + board(url));
+        if (!onShift) return signInPage();
+        if (url.pathname === '/shop') return staffPage(res, p, 'The shop', board(url), { here: '/shop' });
         const taking = url.pathname.match(/^\/shop\/new\/([a-z]+)$/);
         const kind = taking && book.kind(taking[1]);
-        if (kind) return show(p, `New: ${kind.name}`, intakeForm(url, kind));
+        if (kind) return staffPage(res, p, `New: ${kind.name}`, intakeForm(url, kind), { here: '/shop' });
         const tagging = url.pathname.match(/^\/shop\/tag\/(j[a-z0-9]+)$/);
         const job = tagging && book.job(tagging[1]);
-        if (job) return show(p, `Tag ${job.tag}`, tag(job, req));
+        if (job) return staffPage(res, p, `Tag ${job.tag}`, tag(job, req), { here: '/shop' });
       }
       send(res, 404, 'Not found');
     } catch (error) {

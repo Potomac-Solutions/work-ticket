@@ -2,7 +2,8 @@
   Where a job is, live. The job is a Sync document only the server writes ('use collection jobs
   by job'); this browser may read it because it opened the job's link (the server's scope). When
   the shop moves the job along, or the balance is paid, the customer's page follows without a
-  reload. `steps` are the kind's stages and `names` how each reads.
+  reload: the headline changes, the stages fill in, and "ready" turns the whole card amber.
+  `steps` are the kind's stages and `names` how each reads.
 -->
 <script>
   'use collection jobs by job'
@@ -14,26 +15,48 @@
   const reached = steps.indexOf(status)
   const balance = Math.max(0, cents - deposit - paid)
   const money = (amount) => `$${(amount / 100).toFixed(2)}`
+  const headline = status === 'ready' ? 'Ready for pickup.' : status === 'picked-up' ? 'Picked up. Thanks for the business.' : status === 'received' ? 'We’ve got it.' : 'On the bench.'
+  const more = status === 'ready' ? 'Come by during pickup hours and give your tag number.' : status === 'picked-up' ? 'See you next season.' : 'This page moves on its own as the shop works. We’ll text you when it’s ready.'
 </script>
 <style>
-  :host { display: grid; gap: 0.9rem; }
-  ol { display: grid; gap: 0.35rem; margin: 0; padding: 0; list-style: none; counter-reset: step; }
-  li { display: flex; align-items: center; gap: 0.6rem; color: var(--muted-foreground, #6b6457); }
-  li::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--border, #d8cfbf); font-size: 0.8rem; font-weight: 700; }
+  :host { display: block; }
+  .card { display: grid; gap: 1.1rem; padding: 1.4rem; border-radius: var(--radius, 0.6rem); background: var(--card, #fff); box-shadow: 0 0 0 1px var(--border, #d8cfbf), var(--shadow, none); transition: background-color 0.3s; }
+  .card.is-ready { background: var(--glow, #f0a13a); box-shadow: 0 0 0 2px var(--night, #1a1f12); }
+  .card.over { background: var(--muted, #ece5d8); }
+  .ready, .word { margin: 0; font-family: var(--font-heading, inherit); font-weight: 700; font-size: clamp(1.6rem, 5vw, 2.1rem); line-height: 1.1; color: var(--foreground, #2a241b); }
+  .more { margin: 0.3rem 0 0; color: var(--muted-foreground, #62594a); }
+  .card.is-ready .more { color: var(--night, #1a1f12); font-weight: 600; }
+  ol { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; counter-reset: step; }
+  li { position: relative; display: flex; align-items: center; gap: 0.75rem; min-height: 2.6rem; color: var(--muted-foreground, #62594a); }
+  li::before { counter-increment: step; content: counter(step); position: relative; z-index: 1; display: grid; place-items: center; flex: none; width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--card, #fff); box-shadow: inset 0 0 0 2px var(--input, #b9ae98); font-size: 0.85rem; font-weight: 700; }
+  li::after { content: ""; position: absolute; left: 0.84rem; top: -50%; width: 2px; height: 100%; background: var(--input, #b9ae98); }
+  li:first-child::after { display: none; }
   li.done { color: var(--foreground, #2a241b); font-weight: 600; }
-  li.done::before { content: "✓"; background: var(--primary, #4a5d23); color: var(--primary-foreground, #fff); box-shadow: none; }
-  li.now { font-weight: 800; }
-  .ready { margin: 0; padding: 0.8rem 1rem; border-radius: 0.6rem; background: #e3efd2; color: #2c3d10; font-weight: 700; }
-  .owed { margin: 0; font-weight: 700; }
-  .settled { margin: 0; color: var(--muted-foreground, #6b6457); }
+  li.done::before { content: "✓"; background: var(--brand, #4a5d23); color: #fff; box-shadow: none; }
+  li.done::after { background: var(--brand, #4a5d23); }
+  li.now { font-weight: 800; font-size: 1.1rem; }
+  li.now::before { box-shadow: 0 0 0 0.3rem rgb(74 93 35 / 0.22); }
+  .money { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem 1rem; padding-top: 1rem; border-top: 1px dashed var(--input, #b9ae98); }
+  .owed, .settled { margin: 0; font-weight: 700; font-size: 1.1rem; }
+  .settled { color: var(--muted-foreground, #62594a); font-weight: 600; }
+  .owed a { display: inline-flex; align-items: center; min-height: 2.75rem; margin-left: 0.6rem; padding: 0.5rem 1.2rem; border-radius: 999px; background: var(--night, #1a1f12); color: #fff; text-decoration: none; }
+  @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
 </style>
 <job-progress job="" steps={[]} names={{}} status-now="received" paid-now={0} cents={0} deposit={0} pay="">
-  <p class="ready" zb-if={status === 'ready'} role="status">Ready for pickup.</p>
-  <ol aria-label="Where your job is">
-    <zb-each items={steps} as="step" key={step}>
-      <li class:done={steps.indexOf(step) <= reached} class:now={step === status} aria-current={step === status ? 'step' : null}>{names[step] ?? step}</li>
-    </zb-each>
-  </ol>
-  <p class="owed" zb-if={balance > 0 && status !== 'picked-up'}>Balance due: {money(balance)} <a zb-if={pay && status === 'ready'} href={pay}>Pay it now</a></p>
-  <p class="settled" zb-if={balance === 0}>Paid in full.</p>
+  <div class="card" class:is-ready={status === 'ready'} class:over={status === 'picked-up'}>
+    <div role="status" aria-live="polite">
+      <p class="ready" zb-if={status === 'ready'}>Ready for pickup.</p>
+      <p class="word" zb-if={status !== 'ready'}>{headline}</p>
+      <p class="more">{more}</p>
+    </div>
+    <ol aria-label="Where your job is">
+      <zb-each items={steps} as="step" key={step}>
+        <li class:done={steps.indexOf(step) <= reached} class:now={step === status} aria-current={step === status ? 'step' : null}>{names[step] ?? step}</li>
+      </zb-each>
+    </ol>
+    <div class="money">
+      <p class="owed" zb-if={balance > 0 && status !== 'picked-up'}>Balance due: {money(balance)} <a zb-if={pay && status === 'ready'} href={pay}>Pay it now</a></p>
+      <p class="settled" zb-if={balance === 0}>Paid in full.</p>
+    </div>
+  </div>
 </job-progress>
