@@ -12,6 +12,8 @@ export const shop = {
   hours: 'Drop-offs 7 am to 9 pm in season; pickups Tuesday to Saturday, 9 to 5',
   concept: 'Concept by Potomac Solutions. Backbone Mountain Taxidermy & Processing is a made-up shop; nothing here is a real job.',
   phone: '(301) 555-0142',
+  /** Listed in search engines? Off for a made-up shop; a real one turns it on. */
+  listed: false,
 };
 
 /**
@@ -70,4 +72,53 @@ export const STAGE_NAMES = {
   whitening: 'Whitening',
   ready: 'Ready for pickup',
   'picked-up': 'Picked up',
+};
+
+/**
+ * Every word on the landing page that isn't a price. Change the page here, not in src/site.js.
+ * What each kind of job costs and how long it takes come from `kinds` above (and the admin).
+ */
+export const site = {
+  description: 'Deer processing and taxidermy on Backbone Mountain in Oakland, Maryland. Drop it off, follow every stage from your phone, and get a text when it’s ready.',
+  trade: 'Taxidermy & Processing',
+  track: 'Track your job',
+  hero: {
+    kicker: 'Oakland, Maryland · since the first frost',
+    title: 'Your deer, done right.',
+    titleSoft: 'Watch it from your phone.',
+    lede: 'Processing and mounts from a shop that answers before you have to ask.',
+    secondary: 'Prices',
+  },
+  dropoff: {
+    kicker: 'No more calling to ask',
+    heading: 'One tag. Every stage.',
+    text: 'We tie a tag on at the counter. Scan it and you’ll see your job move: received, on the bench, ready. We text you the minute it’s done.',
+  },
+  find: {
+    heading: 'Find your job',
+    text: 'Scan the code on your tag, or give the tag number and the last four digits of your phone.',
+  },
+  services: {
+    kicker: 'What we do',
+    heading: 'Cut, wrapped, mounted.',
+    lede: 'Honest prices, posted. A deposit at drop-off; the balance online or at pickup.',
+  },
+  story: {
+    kicker: 'The shop',
+    heading: 'Slow work. No shortcuts.',
+    paragraphs: [
+      'A shoulder mount takes about six months because tanning takes as long as it takes. We’d sooner tell you that up front than rush a hide.',
+      'Every job that comes through the door gets a tag, a name and a place on the bench. You’ll always know where yours is.',
+    ],
+  },
+  steps: {
+    heading: 'How it works',
+    list: [
+      ['Drop it off', 'Leave a deposit, take a tag.'],
+      ['Follow along', 'Scan the tag. Watch each stage.'],
+      ['Pick it up', 'We text you. Pay online or at the counter.'],
+    ],
+  },
+  visit: { kicker: 'Find us', heading: 'Visit', where: 'On Backbone Mountain, ten minutes out of town. Pull around back in season; the cooler door is the green one.', call: 'Call the shop' },
+  foot: { line: 'Deer processing and taxidermy, tracked from drop-off to pickup.', built: 'Built by Potomac Solutions', builtHref: 'https://potomac.solutions' },
 };

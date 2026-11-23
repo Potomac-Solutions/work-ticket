@@ -1,0 +1,210 @@
+/*
+  Base: the shop's colours, type and the pieces every page shares (buttons, forms, panels,
+  tables, notices). The names in :root are the ones the kit's components read, so they take the
+  shop's identity without knowing it. Landing-page sections are in site.css.
+*/
+:root {
+  /* Barn paper, pine, blaze orange and lamp light: the shop's existing olive and amber, named. */
+  --paper: #f6f2ea;
+  --paper-deep: #ebe4d6;
+  --ink: #2a241b;
+  --ink-soft: #62594a;
+  --brand: #4a5d23;
+  --brand-deep: #35441a;
+  --brand-rgb: 74 93 35;
+  --night: #1a1f12;
+  --night-rgb: 26 31 18;
+  --shade-rgb: 14 18 10;
+  --hot: #b4531a;
+  --hot-ink: #8f400f;
+  --hot-rgb: 180 83 26;
+  --glow: #f0a13a;
+  --glow-hi: #ffb956;
+  --glow-rgb: 240 161 58;
+  --on-glow: #1a1f12;
+  --on-hot: #fff;
+  --on-night: #efe8da;
+  --on-night-soft: #c4bca9;
+  --on-night-dim: #9a927f;
+  --line: #d8cfbf;
+
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: #fffdf8;
+  --card-foreground: var(--ink);
+  --border: var(--line);
+  --input: #b9ae98;
+  --muted: #ece5d8;
+  --muted-foreground: var(--ink-soft);
+  --primary: var(--brand);
+  --primary-foreground: #fff;
+  --ring: var(--hot);
+  --accent: var(--hot);
+  --note: #f1e6cf;
+  --radius: 0.6rem;
+  --radius-sm: 0.4rem;
+
+  --font-heading: "Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif;
+  --font-body: "Work Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --shadow: 0 1px 2px rgb(var(--night-rgb) / 0.06), 0 8px 24px -12px rgb(var(--night-rgb) / 0.18);
+  --gutter: clamp(1rem, 4vw, 2.5rem);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 5rem; }
+body { margin: 0; font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.55; background: var(--background); color: var(--foreground); min-height: 100dvh; display: flex; flex-direction: column; }
+img, svg { max-width: 100%; }
+a:not(.action-button, .go, .button, .bag) { color: inherit; text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+a:not(.action-button, .go, .button, .bag):hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+::selection { background: var(--glow); color: var(--night); }
+
+h1, h2, h3 { font-family: var(--font-heading); font-weight: 600; line-height: 1.1; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h1 { font-size: clamp(2rem, 5vw, 2.9rem); }
+h2 { font-size: 1.4rem; }
+h3 { font-size: 1.1rem; }
+p { text-wrap: pretty; }
+.lede { margin: 0.5rem 0 0; color: var(--muted-foreground); max-width: 46rem; }
+.muted { color: var(--muted-foreground); }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.kicker { margin: 0 0 0.6rem; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hot-ink); }
+
+.skip { position: absolute; left: 0.75rem; top: -4rem; z-index: 50; padding: 0.6rem 1rem; border-radius: var(--radius-sm); background: var(--night); color: #fff !important; font-weight: 700; }
+.skip:focus { top: 0.75rem; }
+.wrap { width: min(72rem, 100% - 2 * var(--gutter)); margin-inline: auto; }
+
+/* The bar across the top of every page: dark, so the logo and "Order now" are the two bright things. */
+.site-head { position: sticky; top: 0; z-index: 20; background: rgb(var(--night-rgb) / 0.94); backdrop-filter: blur(10px); color: #fff; }
+.site-head .bar { display: flex; align-items: center; gap: 0.75rem 1.25rem; min-height: 4.25rem; }
+.wordmark { display: inline-flex; align-items: center; gap: 0.6rem; text-decoration: none; color: var(--ink); }
+.site-head .wordmark { color: #fff; }
+.wordmark svg { width: 2.4rem; height: 2.4rem; flex: none; }
+.wordmark b { display: block; white-space: nowrap; font-family: var(--font-heading); font-weight: 600; font-size: 1.25rem; line-height: 1; letter-spacing: -0.01em; }
+.wordmark small { display: block; margin-top: 0.2rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--hot-ink); line-height: 1; }
+.site-head .wordmark small { color: var(--glow); }
+.site-head nav { margin-left: auto; display: flex; align-items: center; gap: 0.25rem; }
+.site-head nav a:not(.bag) { white-space: nowrap; padding: 0.5rem 0.7rem; border-radius: 999px; font-size: 0.95rem; font-weight: 600; text-decoration: none; color: var(--on-night); }
+.site-head nav a:not(.bag):hover, .site-head nav a[aria-current] { background: rgb(255 255 255 / 0.12); }
+.bag { display: inline-flex; align-items: center; gap: 0.45rem; margin-left: 0.5rem; min-height: 2.75rem; padding: 0.55rem 1.25rem; border-radius: 999px; background: var(--glow); color: var(--on-glow); font-size: 1rem; font-weight: 700; text-decoration: none; white-space: nowrap; transition: background-color 0.15s, transform 0.15s; }
+.bag:hover { background: var(--glow-hi); }
+.bag:active { transform: translateY(1px); }
+.bag svg { width: 1.05rem; height: 1.05rem; }
+@media (max-width: 60rem) { .site-head nav a.wide { display: none; } }
+.bag .short { display: none; }
+@media (max-width: 46rem) {
+  .bag .long { display: none; }
+  .bag .short { display: inline; }
+  .wordmark small { display: none; }
+  .wordmark b { font-size: 1.05rem; }
+  .site-head .wordmark svg { width: 1.9rem; height: 1.9rem; }
+  .site-head .bar { gap: 0.5rem; min-height: 3.75rem; }
+  .site-head .bag svg { display: none; }
+  .site-head .bag { padding-inline: 0.9rem; margin-left: 0.1rem; font-size: 0.92rem; }
+  .site-head nav a:not(.bag) { padding-inline: 0.45rem; font-size: 0.9rem; }
+}
+@media (max-width: 23rem) { .wordmark b { font-size: 0.92rem; } .site-head .wordmark svg { display: none; } .site-head .bag { padding-inline: 0.7rem; font-size: 0.86rem; } .site-head nav a:not(.bag) { padding-inline: 0.3rem; font-size: 0.86rem; } }
+
+main { flex: 1; }
+main:not(.landing) { width: min(60rem, 100% - 2 * var(--gutter)); margin: 0 auto; padding: 2rem 0 4rem; display: grid; gap: 1.5rem; align-content: start; }
+main.wide { width: min(76rem, 100% - 2 * var(--gutter)); }
+
+/* Buttons. `.go` is the page's main action; `.button.light` the quiet one. */
+/* The kit's own buttons (.action-button) style themselves; these rules leave them alone. */
+button:not(.action-button), .button, .go { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font: inherit; font-weight: 700; line-height: 1.2; min-height: 2.75rem; padding: 0.65rem 1.15rem; border: 0; border-radius: 999px; background: var(--primary); color: var(--primary-foreground); cursor: pointer; text-decoration: none; justify-self: start; transition: background-color 0.15s, transform 0.15s; }
+button:not(.action-button):hover, .button:hover { background: var(--brand-deep); }
+button:not(.action-button):active, .button:active, .go:active { transform: translateY(1px); }
+.go { background: var(--hot); color: var(--on-hot); }
+.go:hover { background: var(--hot-ink); }
+.go.lg, .button.lg { min-height: 3.25rem; padding: 0.85rem 1.5rem; font-size: 1.08rem; }
+.button.light { background: var(--muted); color: var(--foreground); }
+.button.ghost { background: transparent; color: inherit; box-shadow: inset 0 0 0 1.5px currentColor; }
+.button.ghost:hover { background: rgb(var(--brand-rgb) / 0.08); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.button.light:hover { background: var(--line); }
+
+/* Forms. */
+label { display: grid; gap: 0.35rem; font-weight: 600; }
+label:not(.check) > :is(input:not([type=checkbox], [type=radio]), select, textarea) { width: 100%; min-width: 0; }
+input, select, textarea { font: inherit; min-height: 2.75rem; padding: 0.6rem 0.8rem; border-radius: var(--radius-sm); border: 1px solid var(--input); background: #fff; color: inherit; max-width: 100%; }
+input:hover, select:hover, textarea:hover { border-color: var(--brand); }
+.check { display: flex; gap: 0.5rem; align-items: start; font-weight: 400; }
+.hint { color: var(--muted-foreground); font-size: 0.9rem; font-weight: 400; }
+form.inline { display: inline; }
+
+/* Panels, notices and the small pieces pages are built from. */
+.panel { display: grid; gap: 0.9rem; align-content: start; padding: 1.25rem 1.35rem; border-radius: var(--radius); background: var(--card); box-shadow: 0 0 0 1px var(--border), var(--shadow); }
+.panel ul, .panel ol { margin: 0; padding-left: 1.2rem; }
+.panel p { margin: 0; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr)); gap: 1rem; }
+.stack { display: grid; gap: 0.75rem; }
+.notice, .ok, .bulletin { margin: 0; padding: 0.75rem 1rem; border-radius: var(--radius-sm); font-weight: 600; }
+.notice { background: #fbe3df; color: #7a1f17; box-shadow: inset 3px 0 0 #b3382b; }
+.ok { background: #e2f1e4; color: #174a2a; box-shadow: inset 3px 0 0 #2f7d4a; }
+.bulletin { background: var(--note); color: var(--ink); box-shadow: inset 3px 0 0 var(--brand); }
+.badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--muted); font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+.badge.booked { background: #e3eef7; color: #163e5c; }
+.badge.cancelled, .badge.off { background: #fbe3df; color: #7a1f17; }
+.badge.past, .badge.handled { background: #e2f1e4; color: #174a2a; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 1rem; margin: 0; }
+dt { font-weight: 700; }
+dd { margin: 0; }
+.code { width: min(16rem, 100%); padding: 0.6rem; border-radius: var(--radius); background: #fff; box-shadow: 0 0 0 1px var(--border); }
+.code svg { display: block; width: 100%; height: auto; }
+
+/* Tables. */
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 0.6rem 0.5rem; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted-foreground); }
+th.num, td.num { text-align: right; }
+.table-wrap { overflow-x: auto; }
+.pager { display: flex; gap: 1rem; align-items: center; }
+td.row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+tr.done { opacity: 0.6; }
+
+/* A message that follows the reader down the page: "Added to your order." */
+.toast { pointer-events: none; position: fixed; z-index: 40; left: 50%; bottom: calc(1rem + var(--bagbar, 0rem)); translate: -50% 0; width: max-content; max-width: calc(100% - 2rem); padding: 0.75rem 1.1rem; border-radius: 999px; background: var(--night); color: #fff; font-weight: 600; box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.5); animation: toast 5s ease forwards; }
+@keyframes toast { 0% { opacity: 0; translate: -50% 0.75rem; } 6%, 85% { opacity: 1; translate: -50% 0; } 100% { opacity: 0; visibility: hidden; } }
+@keyframes gone { to { opacity: 0; visibility: hidden; } }
+
+/* Staff pages, until they get their own sheet. */
+.orders { display: grid; gap: 0.8rem; margin: 0; padding: 0; list-style: none; }
+.ticket { display: grid; gap: 0.35rem; padding: 0.9rem 1rem; border-radius: var(--radius); background: var(--card); box-shadow: 0 0 0 1px var(--border); }
+.ticket p { margin: 0; }
+.stock { display: flex; gap: 0.5rem; align-items: end; flex-wrap: wrap; }
+.stock input { width: 5rem; }
+.admin { display: grid; grid-template-columns: 13rem 1fr; gap: 1.5rem; align-items: start; }
+.admin-nav { position: sticky; top: 5rem; display: grid; gap: 0.15rem; padding: 0.75rem; border-radius: var(--radius); background: var(--card); box-shadow: 0 0 0 1px var(--border); }
+.admin-nav a { padding: 0.45rem 0.6rem; border-radius: 0.4rem; text-decoration: none; font-weight: 600; white-space: nowrap; }
+.admin-nav a[aria-current] { background: var(--muted); color: var(--primary); }
+.admin-nav small { padding: 0.6rem 0.6rem 0.2rem; color: var(--muted-foreground); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.72rem; }
+.admin-body { display: grid; gap: 1.25rem; min-width: 0; }
+@media (max-width: 52rem) { .admin { grid-template-columns: 1fr; } .admin-nav { position: static; grid-auto-flow: column; justify-content: start; overflow-x: auto; } .admin-nav small { display: none; } }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.75rem; }
+.tile { padding: 0.9rem 1rem; border-radius: var(--radius); background: var(--card); box-shadow: 0 0 0 1px var(--border); }
+.tile span { display: block; color: var(--muted-foreground); font-size: 0.85rem; font-weight: 600; }
+.tile strong { display: block; font-family: var(--font-heading); font-size: 1.7rem; line-height: 1.2; }
+.tile small { color: var(--muted-foreground); }
+.filters { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: end; }
+.filters label { font-size: 0.9rem; }
+
+/* The foot of every page. */
+.site-foot { margin-top: auto; background: var(--night); color: var(--on-night); font-size: 0.95rem; }
+.site-foot .cols { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 2rem; padding: 3rem 0 2rem; }
+.site-foot h2 { margin: 0 0 0.6rem; font-family: var(--font-body); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--glow); }
+.site-foot ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.35rem; }
+.site-foot p { margin: 0 0 0.5rem; }
+.site-foot .wordmark { color: #fff; margin-bottom: 0.75rem; }
+.site-foot .wordmark small { color: var(--glow); display: block; }
+.site-foot .fine { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; justify-content: space-between; padding: 1.25rem 0 2rem; border-top: 1px solid rgb(255 255 255 / 0.14); color: var(--on-night-soft); font-size: 0.88rem; }
+.site-foot .fine p { margin: 0; max-width: 46rem; }
+@media (max-width: 48rem) { .site-foot .cols { grid-template-columns: 1fr 1fr; } .site-foot .cols > :first-child { grid-column: 1 / -1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  .toast { animation: gone 0.01ms 5s forwards !important; }
+}
+@media print {
+  .site-head, .site-foot, .bagbar, .toast, .skip { display: none !important; }
+  body { background: #fff; }
+}

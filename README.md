@@ -77,6 +77,16 @@ The admin, customer accounts and reports (`test/admin.test.js`, over plain HTTP)
 
 Every behaviour was broken on purpose once to check a test fails (19 of 19 caught). Writing test 4 found a real bug: a second press of a stage's button moved the job on a further stage. Each button now says which stage it moves to.
 
+## How it looks
+
+- **The landing page** (`/`) is photo-led: a full-screen photograph with **Track your job**, the tag and "Find your job" beside a photograph, what the shop does as photo cards with its prices, the shop's story over a photograph, three steps, and where to find it. Its words are in `src/shop.js` (`site`); `src/site.js` lays them out.
+- **Photographs** are files in `public/photos/` (`hero`, `tag`, `workshop`, and one per kind of job by its id), as `.jpg` or `.webp`. Replace a file and restart. The ones here were generated for this made-up shop; see `public/photos/README.md`.
+- **Styles** are files in `public/`: `base.css` (colours, type, buttons, forms; every page), `site.css` (the landing page), `customer.css` (a job, paying, the account) and `app.css` (the shop floor and the admin). `src/assets.js` serves them, the photographs and the two typefaces (Zilla Slab and Work Sans, from `@fontsource`, self-hosted) at `/assets/…`, cached by a hash of their bytes.
+- **The staff's side** has its own page frame (`src/shell.js`): a sidebar at a desk; on a phone a bar on top, tabs along the bottom and the sidebar as a sheet. Light or dark follows the device, with a switch that remembers. The shop floor is three lanes: ready for pickup, on the bench, just in. `public/app.js` adds a few keys (`s` shop, `j` jobs, `n` take a job in, `/` search, `1`–`9` move a job on); everything works without it.
+- **Tables** become cards on a phone (`src/tables.js` names each cell after its column).
+- **Search engines** are asked not to list the page, because the shop is made up. Set `listed: true` in `src/shop.js` for a real one.
+- **Checks.** With the demo running, `npm run design-check` opens every page in a browser, signed out and as each demo sign-in, at five widths, light and dark: nothing scrolls sideways, one `h1`, headings in order, every input labelled, text contrast of 4.5:1.
+
 ## Not yet
 
 - More of the owner's admin: adding kinds of job, their stages and questions are still in `src/shop.js` (prices, deposits and words are editable).
