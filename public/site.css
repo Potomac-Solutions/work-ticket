@@ -132,3 +132,7 @@
 .hero::before { background: linear-gradient(90deg, rgb(var(--shade-rgb) / 0.82) 0%, rgb(var(--shade-rgb) / 0.45) 42%, rgb(var(--shade-rgb) / 0) 72%), linear-gradient(0deg, rgb(var(--shade-rgb) / 0.7) 0%, transparent 30%); }
 .head h2, .sec h2.big, .split h2 { font-size: clamp(1.6rem, 2.5vw, 2.25rem); line-height: 1.2; }
 .hero .go { box-shadow: none; }
+
+/* The story photo is mounted like the work: cut to the shape of the shop's plaque, on a walnut backboard. */
+body .split .pic { aspect-ratio: 48 / 58; width: min(100%, 24rem); justify-self: center; padding: 0.65rem; border-radius: 0; overflow: visible; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='8 3 48 58'%3E%3Cpath d='M32 3c12 0 21 3 24 7v26c0 12-11 20-24 25C19 56 8 48 8 36V10c3-4 12-7 24-7z' fill='%238c5a2b'/%3E%3C/svg%3E") center / 100% 100% no-repeat; box-shadow: none; filter: drop-shadow(0 22px 26px rgb(30 36 30 / 0.35)); }
+body .split .pic img { border-radius: 0; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='8 3 48 58'%3E%3Cpath d='M32 3c12 0 21 3 24 7v26c0 12-11 20-24 25C19 56 8 48 8 36V10c3-4 12-7 24-7z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='8 3 48 58'%3E%3Cpath d='M32 3c12 0 21 3 24 7v26c0 12-11 20-24 25C19 56 8 48 8 36V10c3-4 12-7 24-7z'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
