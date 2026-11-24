@@ -122,3 +122,13 @@
   .hero .actions .go { flex: 1 1 100%; }
   .hero-strip .wrap { gap: 0.2rem 1.5rem; font-size: 0.95rem; }
 }
+
+/* The hero is calm so the mount carries it: a field-guide headline at a modest size, and the place on a specimen tag. */
+.hero { min-height: min(84svh, 50rem); }
+.hero h1 { max-width: 16ch; font-weight: 600; font-size: clamp(2.25rem, 4vw, 3.5rem); line-height: 1.1; letter-spacing: -0.02em; }
+.hero h1 em { color: inherit; font-weight: inherit; }
+.hero .lede { max-width: 34rem; font-size: 1.15rem; }
+.hero .kicker { display: inline-block; padding: 0.3rem 0.6rem; border: 1px solid rgb(255 255 255 / 0.5); border-radius: 2px; font-family: var(--font-mono); font-weight: 500; font-size: 0.78rem; letter-spacing: 0.04em; color: var(--on-night); }
+.hero::before { background: linear-gradient(90deg, rgb(var(--shade-rgb) / 0.82) 0%, rgb(var(--shade-rgb) / 0.45) 42%, rgb(var(--shade-rgb) / 0) 72%), linear-gradient(0deg, rgb(var(--shade-rgb) / 0.7) 0%, transparent 30%); }
+.head h2, .sec h2.big, .split h2 { font-size: clamp(1.6rem, 2.5vw, 2.25rem); line-height: 1.2; }
+.hero .go { box-shadow: none; }
