@@ -15,11 +15,11 @@ const TYPES = { '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.js
 
 /** The faces the pages use: [family, weight, style, package, file]. Latin only, a few KB each. */
 export const FONTS = [
-  ['Zilla Slab', 600, 'normal', '@fontsource/zilla-slab', 'zilla-slab-latin-600-normal.woff2'],
-  ['Zilla Slab', 700, 'normal', '@fontsource/zilla-slab', 'zilla-slab-latin-700-normal.woff2'],
-  ['Work Sans', 400, 'normal', '@fontsource/work-sans', 'work-sans-latin-400-normal.woff2'],
-  ['Work Sans', 600, 'normal', '@fontsource/work-sans', 'work-sans-latin-600-normal.woff2'],
-  ['Work Sans', 700, 'normal', '@fontsource/work-sans', 'work-sans-latin-700-normal.woff2'],
+  ['Fraunces', 600, 'normal', '@fontsource/fraunces', 'fraunces-latin-600-normal.woff2'],
+  ['JetBrains Mono', 500, 'normal', '@fontsource/jetbrains-mono', 'jetbrains-mono-latin-500-normal.woff2'],
+  ['Plus Jakarta Sans', 400, 'normal', '@fontsource/plus-jakarta-sans', 'plus-jakarta-sans-latin-400-normal.woff2'],
+  ['Plus Jakarta Sans', 600, 'normal', '@fontsource/plus-jakarta-sans', 'plus-jakarta-sans-latin-600-normal.woff2'],
+  ['Plus Jakarta Sans', 700, 'normal', '@fontsource/plus-jakarta-sans', 'plus-jakarta-sans-latin-700-normal.woff2'],
 ];
 
 const files = new Map();

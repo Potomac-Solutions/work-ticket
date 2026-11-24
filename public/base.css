@@ -5,32 +5,32 @@
 */
 :root {
   /* Barn paper, pine, blaze orange and lamp light: the shop's existing olive and amber, named. */
-  --paper: #f6f2ea;
+  --paper: #f4efe6;
   --paper-deep: #ebe4d6;
-  --ink: #2a241b;
-  --ink-soft: #62594a;
-  --brand: #4a5d23;
-  --brand-deep: #35441a;
-  --brand-rgb: 74 93 35;
-  --night: #1a1f12;
-  --night-rgb: 26 31 18;
-  --shade-rgb: 14 18 10;
-  --hot: #b4531a;
-  --hot-ink: #8f400f;
-  --hot-rgb: 180 83 26;
-  --glow: #f0a13a;
-  --glow-hi: #ffb956;
-  --glow-rgb: 240 161 58;
-  --on-glow: #1a1f12;
+  --ink: #1c1b18;
+  --ink-soft: #5c584f;
+  --brand: #2f4f3a;
+  --brand-deep: #223b2b;
+  --brand-rgb: 47 79 58;
+  --night: #1e241e;
+  --night-rgb: 30 36 30;
+  --shade-rgb: 18 23 18;
+  --hot: #8c5a2b;
+  --hot-ink: #6f4520;
+  --hot-rgb: 140 90 43;
+  --glow: #e8dcc3;
+  --glow-hi: #f4efe6;
+  --glow-rgb: 232 220 195;
+  --on-glow: #1e241e;
   --on-hot: #fff;
-  --on-night: #efe8da;
-  --on-night-soft: #c4bca9;
-  --on-night-dim: #9a927f;
-  --line: #d8cfbf;
+  --on-night: #efe9dc;
+  --on-night-soft: #c9c2b2;
+  --on-night-dim: #9c9584;
+  --line: #ddd5c7;
 
   --background: var(--paper);
   --foreground: var(--ink);
-  --card: #fffdf8;
+  --card: #ffffff;
   --card-foreground: var(--ink);
   --border: var(--line);
   --input: #b9ae98;
@@ -40,12 +40,13 @@
   --primary-foreground: #fff;
   --ring: var(--hot);
   --accent: var(--hot);
-  --note: #f1e6cf;
+  --note: #efe6d3;
   --radius: 0.6rem;
   --radius-sm: 0.4rem;
 
-  --font-heading: "Zilla Slab", Rockwell, "Roboto Slab", Georgia, serif;
-  --font-body: "Work Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-body: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --shadow: 0 1px 2px rgb(var(--night-rgb) / 0.06), 0 8px 24px -12px rgb(var(--night-rgb) / 0.18);
   --gutter: clamp(1rem, 4vw, 2.5rem);
   color-scheme: light;
@@ -208,3 +209,15 @@ tr.done { opacity: 0.6; }
   .site-head, .site-foot, .bagbar, .toast, .skip { display: none !important; }
   body { background: #fff; }
 }
+
+/* The shop's own shapes: framed plates and wood joinery. Small corners, flat surfaces, hairlines. */
+:root { --radius: 0.3rem; --radius-sm: 0.2rem; }
+body :is(button:not(.action-button), .button, .go, .bag) { border-radius: 3px; }
+body { font-size: 1rem; line-height: 1.65; }
+h1 { letter-spacing: -0.02em; }
+.num, .tag-no, kbd { font-family: var(--font-mono); font-size: 0.94em; }
+.site-head nav a:not(.bag), .badge { border-radius: 3px; }
+body .split .pic { rotate: none; border-radius: 6px; }
+:root { --shadow: none; }
+.panel { box-shadow: 0 0 0 1px var(--border); }
+.kicker { text-transform: none; letter-spacing: 0; font-size: 0.92rem; }

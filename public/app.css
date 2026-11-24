@@ -2,8 +2,8 @@
   The staff's side: the shop floor and the admin. Same shop, quieter: denser type, a sidebar, and a dark theme for a bench under a lamp. Loaded after base.css; everything here is under body.staff.
 */
 body.staff {
-  --background: #f2eee5;
-  --card: #fffdf8;
+  --background: #f4efe6;
+  --card: #ffffff;
   --field: #fff;
   --ok-bg: #e2f1e4; --ok-fg: #174a2a;
   --bad-bg: #fbe3df; --bad-fg: #7a1f17;
@@ -18,8 +18,8 @@ body.staff {
   :root:not([data-theme=light]) body.staff {
     --background: #12160d; --foreground: #ece6d8; --card: #1c2214; --card-foreground: #ece6d8; --field: #12160d;
     --border: #343c27; --line: #343c27; --input: #4d583a; --muted: #252c1a; --muted-foreground: #b3ad9b;
-    --primary: #f0a13a; --primary-foreground: #1a1f12; --brand: #f0a13a; --brand-deep: #ffb956; --brand-rgb: 240 161 58; --ring: #f0a13a;
-    --hot: #e88a4a; --hot-ink: #f0a56e; --accent: #e88a4a; --note: #252c1a; --ink: #ece6d8;
+    --primary: #e8dcc3; --primary-foreground: #1e241e; --brand: #e8dcc3; --brand-deep: #f4efe6; --brand-rgb: 232 220 195; --ring: #e8dcc3;
+    --hot: #f4efe6; --hot-ink: #f4efe6; --accent: #f4efe6; --note: #252c1a; --ink: #ece6d8;
     --ok-bg: #153823; --ok-fg: #a9e3bd; --bad-bg: #4a1a15; --bad-fg: #f6b8b0; --info-bg: #17324a; --info-fg: #b3d6f2; --warn-bg: #4a3410; --warn-fg: #f6d58f;
     --side: #0b0e07; --shadow: none; color-scheme: dark;
   }
@@ -27,8 +27,8 @@ body.staff {
 :root[data-theme=dark] body.staff {
     --background: #12160d; --foreground: #ece6d8; --card: #1c2214; --card-foreground: #ece6d8; --field: #12160d;
     --border: #343c27; --line: #343c27; --input: #4d583a; --muted: #252c1a; --muted-foreground: #b3ad9b;
-    --primary: #f0a13a; --primary-foreground: #1a1f12; --brand: #f0a13a; --brand-deep: #ffb956; --brand-rgb: 240 161 58; --ring: #f0a13a;
-    --hot: #e88a4a; --hot-ink: #f0a56e; --accent: #e88a4a; --note: #252c1a; --ink: #ece6d8;
+    --primary: #e8dcc3; --primary-foreground: #1e241e; --brand: #e8dcc3; --brand-deep: #f4efe6; --brand-rgb: 232 220 195; --ring: #e8dcc3;
+    --hot: #f4efe6; --hot-ink: #f4efe6; --accent: #f4efe6; --note: #252c1a; --ink: #ece6d8;
     --ok-bg: #153823; --ok-fg: #a9e3bd; --bad-bg: #4a1a15; --bad-fg: #f6b8b0; --info-bg: #17324a; --info-fg: #b3d6f2; --warn-bg: #4a3410; --warn-fg: #f6d58f;
     --side: #0b0e07; --shadow: none; color-scheme: dark;
 }
@@ -237,3 +237,22 @@ kbd { padding: 0.05rem 0.4rem; border-radius: 0.3rem; background: rgb(255 255 25
 .tag .tools { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .facts { grid-template-columns: max-content 1fr; }
 @media print { .tag { box-shadow: none !important; border: 2px dashed #000; } .tag .tools { display: none; } }
+
+/* The back office runs along the top like the rail over the bench: tabs, with the open one underlined in blaze orange. */
+@media (min-width: 56.01rem) {
+  .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+  .side { z-index: 20; height: auto; overflow: visible; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.5rem 1.5rem; padding: 0.7rem clamp(1rem, 3vw, 2.25rem) 0; }
+  .side .wordmark { grid-area: 1 / 1; }
+  .side .me { grid-area: 1 / 2; margin: 0; padding: 0; border: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.3rem 1.1rem; }
+  .side .me p { display: flex; align-items: baseline; gap: 0.5rem; }
+  .side .me .row { margin: 0; }
+  .side nav { grid-area: 2 / 1 / 3 / -1; display: flex; flex-wrap: wrap; gap: 0.15rem; }
+  .side nav small, .side .keys { display: none; }
+  .side nav a { padding: 0.6rem 0.85rem; }
+  .staff main { margin-inline: auto; width: 100% !important; }
+}
+@media (min-width: 56.01rem) {
+  .side nav a { border-radius: 0; }
+  .side nav a[aria-current] { background: none; color: #fff; box-shadow: inset 0 -3px 0 var(--glow); }
+  .side nav a[aria-current] b { background: var(--glow); color: var(--on-glow); }
+}
