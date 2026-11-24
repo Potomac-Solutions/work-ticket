@@ -8,7 +8,7 @@ export const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => 
 
 /** Small drawings, as inline SVG: they take the shop's colours. Photographs are files in public/photos/. */
 export const art = {
-  mark: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="12" fill="#1e241e"/><path d="M32 50V30M32 30c-2-8-10-8-12-16M32 30c2-8 10-8 12-16M24 22l-7-2M40 22l7-2M21 15l-3-5M43 15l3-5" fill="none" stroke="#e8dcc3" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  mark: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 3c12 0 21 3 24 7v26c0 12-11 20-24 25C19 56 8 48 8 36V10c3-4 12-7 24-7z" fill="#2f4f3a" stroke="#e8dcc3" stroke-width="2"/><path d="M32 49V33M32 33c-2-7-9-7-11-14M32 33c2-7 9-7 11-14M24 25l-6-2M40 25l6-2M22 19l-2-5M42 19l2-5" fill="none" stroke="#e8dcc3" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.800 7 11 7 11z"/><circle cx="12" cy="10" r="2.500"/></svg>',
   phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h4l1.500 5-2.200 1.600a12 12 0 0 0 5.100 5.100L16 12.500l5 1.500v4a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2z"/></svg>',
