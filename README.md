@@ -1,6 +1,6 @@
 # Work Ticket
 
-Drop off and track, for a shop that takes jobs in and hands them back: a taxidermist, a deer processor, a small-engine or ski-tuning shop. The counter takes a job in and prints its tag. The customer follows each stage on their phone, gets a text when it's ready, and can pay the balance online. A Potomac Solutions platform, built on the [kit](https://github.com/Potomac-Solutions/kit) and [Zubra](https://github.com/zubra-js/zubra).
+Drop off and track, for a shop that takes jobs in and hands them back: a taxidermist, a deer processor, a small-engine or ski-tuning shop. The counter takes a job in and prints its tag. The customer follows each stage on their phone, gets a text when it's ready, and can pay the balance online. A Potomac Solutions platform, built on the Potomac kit and [Zubra](https://github.com/zubra-js/zubra).
 
 The shop it starts with, Backbone Mountain Taxidermy & Processing in Oakland, Maryland, is made up. Nothing here is a real job, payments are in test mode, and texts are kept on the shop's page instead of being sent.
 
@@ -68,7 +68,7 @@ For a real business, leave out `DEMO`, set `DATA_DIR` to a mounted volume, start
 
 | Piece | Job |
 | --- | --- |
-| [Potomac kit](https://github.com/Potomac-Solutions/kit) (private) | `stages` (each kind of job's stages, one step at a time, once), `notify` (the ready text and email; a test outbox here), `pay` (the balance, charged at most once; its test provider), `staff` and `staff/pages` (the owner and staff: passwords, sessions, invites, roles, and their pages), `auth` (the customer and shop cookies), `store` (the Sync log). The kit's `checkout-form`, from its package |
+| Potomac kit (private) | `stages` (each kind of job's stages, one step at a time, once), `notify` (the ready text and email; a test outbox here), `pay` (the balance, charged at most once; its test provider), `staff` and `staff/pages` (the owner and staff: passwords, sessions, invites, roles, and their pages), `auth` (the customer and shop cookies), `store` (the Sync log). The kit's `checkout-form`, from its package |
 | `@zubra/server` | Renders every page before any JavaScript runs |
 | `@zubra/sync` | The log (one SQLite file). Each job is a document only the server writes; a customer's page follows it live, and a browser reads only the jobs it has opened |
 | [symbology](https://github.com/journey-to-code-org/symbology) | Draws the code on the tag (the customer's link) |
@@ -81,7 +81,7 @@ For a real business, leave out `DEMO`, set `DATA_DIR` to a mounted volume, start
 ## Run it
 
 ```sh
-npm install      # needs read access to the private Potomac-Solutions/kit repository
+npm install      # needs read access to the private Potomac kit repository
 npm start        # http://localhost:3000
 npm test         # needs Chrome or Playwright's Chromium
 ```
