@@ -18,7 +18,7 @@ The shop it starts with, Backbone Mountain Taxidermy & Processing in Oakland, Ma
 
 **The public side**
 1. **The landing page** (`/`): the shop, finding a job by tag and phone, what it does and for how much, how it works, and where and when.
-2. **Follow a job.** Open one from its tag (or tag number and phone): its stages move without a reload, and **Pay it now** takes the balance with any card number (`4000 0000 0000 0002` is declined).
+2. **Follow a job.** Open one from its tag (or tag number and phone): its stages move without a reload, and **Pay it now** takes the balance in Helcim's secure frame (until Helcim is set up, on the kit's test page: press **Pay**, or go back without paying).
 3. **An account** (`/account`): a job taken in under your email joins it, and so does any job you open while signed in. Signed in on any device, every job is there, and you can pay from there. **Forgot your password?** sends a one-time link (to the Outbox, and the server's log).
 
 **The admin** (`/admin`, staff sign-in)
@@ -64,6 +64,20 @@ With `DEMO=1` the server is a demo anyone can try, back office included (`src/de
 
 For a real business, leave out `DEMO`, set `DATA_DIR` to a mounted volume, start it with `npm start`, and claim the first owner's setup link from the deploy log.
 
+## Paying
+
+The customer pays on **Helcim**: the card is typed there, never here. Paying the balance opens Helcim's frame on a page of the studio's, and the balance is paid once Helcim's signed answer checks out. Helcim pays in its own frame on a page of this app’s, not on a page of Helcim’s. The card is still typed into Helcim’s frame, never here. Helcim has no webhook; the kit checks Helcim’s signed answer instead.
+
+Until Helcim's settings are on the server, the kit's test page stands in. It is plainly a test, with no card and no money, and makes the same trip there and back. To use Helcim's test mode, set these on Railway:
+
+| Setting | What |
+| --- | --- |
+| `PAY_HELCIM_TOKEN` | An API token with HelcimPay.js allowed for `https://work-ticket.potomac.solutions` (Helcim → Integrations → API Access Configuration). Use a Helcim developer test account: Helcim has no sandbox setting of its own |
+
+`PAY_PROVIDER` picks another platform instead (`stripe`, `square`, `paypal`, `helcim`), with its own settings as in the kit's README. Nothing else changes. Keep the public demo on test keys: with live ones, real money moves.
+
+`SESSION_SECRET` must be at least 32 characters now (the kit refuses a shorter one).
+
 ## How it is put together
 
 | Piece | Job |
@@ -101,7 +115,7 @@ Sync follows one document, and a new job is a new document that no element on th
 2. Intake refuses a missing name, a phone without an area code, an answer the kind doesn't have, or a deposit above the price; an extra the kind doesn't offer is ignored, not charged.
 3. A job moves one stage at a time and the customer follows it live; ready sends the text and the email, with the first name, the tag, the balance and the link; pickup needs the balance taken, and happens once.
 4. Two tablets pressing the same button at once move a job one stage, not two.
-5. The customer pays the balance online once (a declined card says so); someone who never opened the job can't pay it.
+5. The customer pays the balance online once (backing out charges nothing); on Helcim (faked), its frame opens on a page of ours under a strict policy, and the balance is paid only when Helcim's signed answer checks out, once; someone who never opened the job can't pay it.
 6. Tag number and the last four of the phone find a lost job; a wrong pair finds nothing.
 7. Only signed-in staff take jobs in or moves them; a browser reads only the jobs it has opened, even when it asks for more, and writes nothing.
 

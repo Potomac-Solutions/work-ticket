@@ -30,7 +30,7 @@ const newKey = () => `j${Date.now().toString(36)}${Math.random().toString(36).sl
 const money = (cents) => `$${(cents / 100).toFixed(2)}`;
 const digits = (text) => String(text ?? '').replace(/\D/g, '');
 
-export async function createJobs({ db = ':memory:', now = Date.now } = {}) {
+export async function createJobs({ db = ':memory:', now = Date.now, provider = testProvider() } = {}) {
   let who = () => null;
   let onShift = () => false;
   const sync = createSyncServer({
@@ -77,7 +77,19 @@ export async function createJobs({ db = ':memory:', now = Date.now } = {}) {
       }),
     },
   });
-  const pay = createPay({ provider: testProvider(), store, now });
+  // Paid on the platform's own page or frame (Helcim, for this studio). `onlineTry` on the job
+  // is the payment under way; `wanted` lets the platform take money only for that one, and
+  // only while there's still a balance of that amount.
+  const pay = createPay({
+    provider,
+    store,
+    now,
+    wanted: (id) => {
+      const key = String(id).split('/')[1];
+      const job = store.get('jobs', key);
+      return Boolean(job && job.onlineTry === id && balanceOf(job) === job.onlineCents);
+    },
+  });
 
   const priceOf = (kind, answers) =>
     kind.cents +
@@ -202,18 +214,57 @@ export async function createJobs({ db = ':memory:', now = Date.now } = {}) {
       return { ok: true, job: view(key, store.get('jobs', key)), to: next, notified: notified ? Boolean(notified.ok) : undefined };
     },
 
-    /** The customer pays the balance online, once. */
-    async payBalance(guest, key, form) {
+    /** The customer pays the balance online, once. With `back`, on the platform's page or frame. */
+    async payBalance(guest, key, form, { back = '', cancel = '' } = {}) {
       const job = KEY.test(key ?? '') ? store.get('jobs', key) : null;
       const access = guest ? (store.get('access', guest.pub)?.keys ?? []) : [];
       if (!job || !(access.includes(key) || (guest?.customer && job.customer === guest.customer))) return { error: 'Open your job from its link first.' };
       const balance = balanceOf(job);
       if (!balance) return { error: 'Nothing left to pay.' };
+      if (back) {
+        const id = `job/${key}/${job.paid ?? 0}`;
+        await store.write('jobs', key, { onlineTry: id, onlineCents: balance });
+        const started = await pay.start({ id, cents: balance, description: `${shop.name} balance, tag ${job.tag}`, back: `${back}?job=${key}`, cancel: cancel ? `${cancel}?job=${key}` : '' });
+        if (started.error === 'paid') return this.finish(key);
+        if (!started.ok) return { error: 'Paying online isn’t working right now. Pay at the counter when you pick it up.' };
+        return { ok: true, paying: true, pay: started.url ? { url: started.url } : { frame: started.frame, ref: started.ref } };
+      }
       const paid = await pay.pay({ id: `job/${key}/${job.paid ?? 0}`, cents: balance, method: { card: String(form.get('card') ?? '') }, description: `${shop.name} balance, tag ${job.tag} (test mode)` });
       if (!paid.ok) return { error: paid.error === 'declined' ? 'That card was declined. Try another.' : 'That didn’t go through. Try again.' };
       await store.write('jobs', key, { paid: (job.paid ?? 0) + balance, paidOnline: balance, paidOnlineAt: now(), ref: paid.ref });
       await touch();
       return { ok: true };
+    },
+
+    /** Back from the platform (its page, its frame, or its webhook): once it's paid, the balance is. */
+    async finish(key, { told } = {}) {
+      const job = KEY.test(key ?? '') ? store.get('jobs', key) : null;
+      if (!job?.onlineTry) return job && !balanceOf(job) ? { ok: true, again: true } : { error: 'Open your job from its link first.' };
+      const settled = await pay.settle({ id: job.onlineTry, ...(told ? { ref: pay.paid(job.onlineTry)?.ref, told } : {}) });
+      if (settled.error === 'not-paid') return { error: 'That payment didn’t go through, so nothing was charged.' };
+      if (!settled.ok) return { error: 'That didn’t go through. Try again.' };
+      if (settled.again) return { ok: true, again: true };
+      await store.write('jobs', key, { paid: (job.paid ?? 0) + job.onlineCents, paidOnline: job.onlineCents, paidOnlineAt: now(), ref: settled.ref, onlineTry: '', onlineCents: 0 });
+      await touch();
+      return { ok: true };
+    },
+
+    /** The webhook from the platform: `{ headers, body, url }`. */
+    async heard(request) {
+      const settled = await pay.heard(request);
+      const key = String(settled.id ?? '').split('/')[1];
+      return settled.ok && key ? this.finish(key) : settled;
+    },
+
+    /** Backed out: nothing charged, and the platform isn't told to take it afterwards. */
+    async cancel(guest, key) {
+      const job = KEY.test(key ?? '') ? store.get('jobs', key) : null;
+      const access = guest ? (store.get('access', guest.pub)?.keys ?? []) : [];
+      if (!job?.onlineTry || !(access.includes(key) || (guest?.customer && job.customer === guest.customer))) return { error: 'Nothing was charged.' };
+      const done = await this.finish(key);
+      if (done.ok) return done;
+      await store.write('jobs', key, { onlineTry: '', onlineCents: 0 });
+      return { error: 'Nothing was charged.' };
     },
 
     // ---- Accounts, the admin and the owner's settings -----------------------------------------

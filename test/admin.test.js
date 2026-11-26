@@ -14,7 +14,7 @@ let server;
 let base;
 
 before(async () => {
-  server = await createApp({ staffCost: COST, db: join(dir, 'shop.db'), cache: false, secret: 'test' });
+  server = await createApp({ staffCost: COST, db: join(dir, 'shop.db'), cache: false, secret: 'test-only-secret-that-is-long-enough-1234' });
   await server.staff.accept(await server.staff.setup(), OWNER);
   const owner = server.staff.list().find((one) => one.email === OWNER.email);
   await server.staff.accept((await server.staff.invite(owner, { email: STAFF.email, name: STAFF.name, roles: ['staff'] })).token, STAFF);
@@ -47,7 +47,12 @@ function browser() {
     },
     async post(path, form) {
       const response = remember(await fetch(`${base}${path}`, { method: 'POST', headers: { cookie: cookie(), 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(form), redirect: 'manual' }));
-      return { status: response.status, location: where(response), text: await response.text() };
+      const answer = { status: response.status, location: where(response), text: await response.text() };
+      if (!answer.location.startsWith('/pay/test')) return answer;
+      // The test payment page, standing in for Helcim's: "Pay", then the way back.
+      const ref = new URL(answer.location, base).searchParams.get('ref');
+      const back = new URL((await this.post('/pay/test', { ref, answer: 'pay' })).location);
+      return this.get(back.pathname + back.search);
     },
   };
 }

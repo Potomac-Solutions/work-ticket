@@ -23,18 +23,22 @@ import { layout, escape } from './src/layout.js';
 import { landing } from './src/site.js';
 import { shell } from './src/shell.js';
 import { cards } from './src/tables.js';
+import { createPayments } from './src/payments.js';
 import { serveAsset } from './src/assets.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const components = join(here, 'src', 'components');
 const money = (cents) => `$${(cents / 100).toFixed(2)}`;
 
-export async function createApp({ db = join(process.env.DATA_DIR ?? here, 'work-ticket.db'), cache = true, secret = process.env.SESSION_SECRET, now = Date.now, staffCost, publicUrl = process.env.PUBLIC_URL ?? '' , demo = process.env.DEMO === '1' } = {}) {
+export async function createApp({ db = join(process.env.DATA_DIR ?? here, 'work-ticket.db'), cache = true, secret = process.env.SESSION_SECRET, now = Date.now, staffCost, publicUrl = process.env.PUBLIC_URL ?? '' , demo = process.env.DEMO === '1' , payEnv = process.env, payFetch } = {}) {
   if (!secret) {
     if (process.env.NODE_ENV === 'production') throw new Error('Set SESSION_SECRET.');
-    secret = 'work-ticket-development-only';
+    secret = 'work-ticket-development-only-not-a-real-secret';
   }
-  const book = await createJobs({ db, now });
+  // Helcim is this studio's platform (HelcimPay.js, a frame on a page of ours); until its token is
+  // on the server, the kit's test page stands in.
+  const payments = createPayments({ env: payEnv, intended: 'helcim', fetch: payFetch });
+  const book = await createJobs({ db, now, provider: payments.provider });
   const guests = signedCookie({ secret, name: 'guest' });
   const production = process.env.NODE_ENV === 'production';
   // Customers who make an account (kit/customers), in the shop's own log.
@@ -116,7 +120,7 @@ ${p.render('job-progress', { job: job.key, steps: job.kind.stages, names: Object
     return `<div class="checkout">
 <section class="page-head"><a class="back" href="/t/${job.key}">Back to your job</a><h1>Pay the balance</h1></section>
 <div class="summary"><p>Tag ${job.tag}<strong>${escape(job.kind.name)}</strong></p><p>Pay now and pickup is quicker.</p></div>
-${p.render('checkout-form', { cart, place: `/t/${job.key}/pay`, checkout: job.key, problem: notices.read(url).problem, testMode: true, name: job.name, email: job.email ?? '', phone: job.phone ?? '' })}
+${p.render('checkout-form', { cart, place: `/t/${job.key}/pay`, checkout: job.key, problem: notices.read(url).problem, ...payments.form, name: job.name, email: job.email ?? '', phone: job.phone ?? '' })}
 </div>`;
   }
 
@@ -195,6 +199,20 @@ ${note(url)}
       const show = (p, title, body, options = {}) => page(res, p, title, body, { nav, ...options });
       if (url.pathname.startsWith('/account') || url.pathname.startsWith('/admin')) res.setHeader('cache-control', 'no-store');
 
+      // Paying on the platform's page: the test page, the way back, backing out, and the webhook.
+      if (await payments.testRoute(req, res, url, readForm)) return;
+      if ((url.pathname === '/pay/back' || url.pathname === '/pay/cancel') && req.method === 'GET') {
+        const key = url.searchParams.get('job') ?? '';
+        const done = url.pathname === '/pay/back' ? await book.finish(key) : await book.cancel(guest, key);
+        return back(res, done.ok ? `/t/${key}?done=${encodeURIComponent('Paid. Thank you.')}` : withProblem(`/t/${key}/pay`, done));
+      }
+      if (url.pathname === '/pay/webhook' && req.method === 'POST') {
+        const request = await payments.webhook(req, publicUrl || origin(req));
+        if (!request) return send(res, 413, 'Too large');
+        const heard = await book.heard(request);
+        return send(res, heard.error === 'bad-signature' ? 401 : 200, heard.error === 'bad-signature' ? 'Bad signature' : 'ok');
+      }
+
       if (req.method === 'POST') {
         // Every form is ours: another site's post is refused (the cookies are SameSite=Lax too).
         if (req.headers['sec-fetch-site'] === 'cross-site') return send(res, 403, 'Forbidden');
@@ -204,9 +222,16 @@ ${note(url)}
           const done = await book.find(guest, form);
           return back(res, done.ok ? `/t/${done.key}` : withProblem('/', done));
         }
+        // Helcim's frame says it's paid: the kit checks Helcim's signed answer before believing it.
+        if (url.pathname === '/pay/told') {
+          const key = String(form.get('job') ?? '');
+          const done = await book.finish(key, { told: String(form.get('told') ?? '') });
+          return back(res, done.ok ? `/t/${key}?done=${encodeURIComponent('Paid. Thank you.')}` : withProblem(`/t/${key}/pay`, done));
+        }
         const paying = url.pathname.match(/^\/t\/(j[a-z0-9]+)\/pay$/);
         if (paying) {
-          const done = await book.payBalance(guest, paying[1], form);
+          const done = await book.payBalance(guest, paying[1], form, { back: `${publicUrl || origin(req)}/pay/back`, cancel: `${publicUrl || origin(req)}/pay/cancel` });
+          if (done.paying) return payments.send(res, done.pay, { cancel: `/pay/cancel?job=${paying[1]}`, fields: { job: paying[1] } });
           return back(res, done.ok ? `/t/${paying[1]}?done=${encodeURIComponent('Paid. Thank you.')}` : withProblem(`/t/${paying[1]}/pay`, done));
         }
         // A customer's account.
@@ -374,7 +399,7 @@ ${note(url)}
       else res.end();
     }
   });
-  return Object.assign(server, { demo, book, staff, customers });
+  return Object.assign(server, { demo, book, payments, staff, customers });
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

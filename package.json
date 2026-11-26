@@ -17,7 +17,7 @@
     "@fontsource/jetbrains-mono": "5.3.0",
     "@fontsource/plus-jakarta-sans": "5.3.0",
     "@journey-to-code/symbology": "0.2.0",
-    "@potomac-solutions/kit": "github:Potomac-Solutions/potomac-kit#2b0f615563f5ce7bb85cbd9f2c10ac06776c0d90",
+    "@potomac-solutions/kit": "github:Potomac-Solutions/potomac-kit#82fcc28c176cea4b8118e0163efc1d03ef94953e",
     "@zubra/compiler": "^6.0.5",
     "@zubra/runtime": "^6.0.5",
     "@zubra/server": "^6.0.5",
