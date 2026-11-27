@@ -31,7 +31,7 @@ let browser;
 let app;
 
 before(async () => {
-  const server = await withOwner(await createApp({ staffCost: COST, db: join(dir, 'app.db'), cache: false, secret: 'test' }));
+  const server = await withOwner(await createApp({ staffCost: COST, db: join(dir, 'app.db'), cache: false, secret: 'test-only-secret-that-is-long-enough-1234' }));
   await new Promise((done) => server.listen(0, done));
   app = { server, base: `http://localhost:${server.address().port}` };
   const system = ['/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser', 'C:/Program Files/Google/Chrome/Application/chrome.exe', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find((path) => existsSync(path));
@@ -52,9 +52,20 @@ async function device(name, { javaScriptEnabled = true, shift = false } = {}) {
   page.on('pageerror', (error) => errors.push(`${name}: ${error.message}`));
   page.on('console', (message) => message.type() === 'error' && !/403/.test(message.text()) && errors.push(`${name}: ${message.text()}`));
   await page.goto(app.base);
+  // Sent on to the test payment page (standing in for Helcim's frame): "Pay", or for the
+  // declining card "Go back without paying", then the way back.
   const post = async (path, form, headers = {}) => {
     const response = await context.request.post(`${app.base}${path}`, { form, headers, maxRedirects: 0 });
-    return { status: response.status(), location: plain(response.headers().location ?? '') };
+    const location = plain(response.headers().location ?? '');
+    if (!location.startsWith('/pay/test')) return { status: response.status(), location };
+    const page = await (await context.request.get(`${app.base}${location}`)).text();
+    assert.match(page, /Once Helcim is set up, this page is Helcim’s own\./);
+    const ref = new URL(location, app.base).searchParams.get('ref');
+    const next = String(form.card ?? '').replace(/\D/g, '') === '4000000000000002'
+      ? /href="([^"]+)">Go back without paying/.exec(page)[1].replaceAll('&amp;', '&')
+      : (await context.request.post(`${app.base}/pay/test`, { form: { ref, answer: 'pay' }, maxRedirects: 0 })).headers().location;
+    const back = await context.request.get(new URL(next, app.base).href, { maxRedirects: 0 });
+    return { status: back.status(), location: plain(back.headers().location ?? '') };
   };
   const get = async (path) => (await context.request.get(`${app.base}${path}`)).text();
   if (shift) await post('/staff/sign-in', { email: OWNER.email, password: OWNER.password });
@@ -170,7 +181,7 @@ test('two shop tablets pressing the same button move a job one stage, not two', 
   await b.context.close();
 });
 
-test('the customer pays the balance online, once; a declined card says so', async () => {
+test('the customer pays the balance online, once; backing out of the payment page charges nothing', async () => {
   const shop = await device('payer shop', { javaScriptEnabled: false, shift: true });
   const { key, job } = await takeIn(shop, 'shoulder', { name: 'Sam Teets', phone: '304-555-0111', pose: 'Semi-sneak' });
   for (let i = 0; i < 4; i++) await advance(shop, key);
@@ -180,7 +191,7 @@ test('the customer pays the balance online, once; a declined card says so', asyn
   await customer.page.click('job-progress a');
   await customer.page.waitForURL(`${app.base}/t/${key}/pay`);
   assert.match(await customer.page.locator('checkout-form').innerText(), /Balance, shoulder mount \(tag \d+\)[\s\S]*\$350\.00/);
-  assert.equal((await customer.post(`/t/${key}/pay`, { checkout: key, name: 'Sam', email: 's@example.com', card: '4000 0000 0000 0002' })).location, `/t/${key}/pay?problem=That card was declined. Try another.`);
+  assert.equal((await customer.post(`/t/${key}/pay`, { checkout: key, name: 'Sam', email: 's@example.com', card: '4000 0000 0000 0002' })).location, `/t/${key}/pay?problem=Nothing was charged.`);
   assert.equal((await customer.post(`/t/${key}/pay`, { checkout: key, name: 'Sam', email: 's@example.com', card: '4242 4242 4242 4242' })).location, `/t/${key}?done=Paid. Thank you.`);
   assert.equal(app.server.book.job(key).balance, 0);
   assert.equal((await customer.post(`/t/${key}/pay`, { checkout: key, card: '4242' })).location, `/t/${key}/pay?problem=Nothing left to pay.`);
